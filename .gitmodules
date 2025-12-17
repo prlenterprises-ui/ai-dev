@@ -1,0 +1,19 @@
+[submodule "repo1"]
+path = external/repo1
+url = https://github.com/prlenterprises-ui/repo1.git
+
+[submodule "repo2"]
+path = external/repo2
+url = https://github.com/prlenterprises-ui/repo2.git
+
+[submodule "repo3"]
+path = external/repo3
+url = https://github.com/prlenterprises-ui/repo3.git
+
+[submodule "repo4"]
+path = external/repo4
+url = https://github.com/prlenterprises-ui/repo4.git
+
+[submodule "repo5"]
+path = external/repo5
+url = https://github.com/prlenterprises-ui/repo5.git
