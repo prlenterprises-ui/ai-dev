@@ -1,19 +1,19 @@
-[submodule "repo1"]
-path = external/repo1
-url = https://github.com/prlenterprises-ui/repo1.git
+[submodule "resume-lm"]
+path = external/resume-lm
+url = https://github.com/prlenterprises-ui/resume-lm.git
 
-[submodule "repo2"]
-path = external/repo2
-url = https://github.com/prlenterprises-ui/repo2.git
+[submodule "llm-council"]
+path = external/llm-council
+url = https://github.com/prlenterprises-ui/llm-council.git    
 
-[submodule "repo3"]
-path = external/repo3
-url = https://github.com/prlenterprises-ui/repo3.git
+[submodule "Resume-Matcher"]
+path = external/Resume-Matcher
+url = https://github.com/prlenterprises-ui/Resume-Matcher.git
 
-[submodule "repo4"]
-path = external/repo4
-url = https://github.com/prlenterprises-ui/repo4.git
+[submodule "jobbernaut-tailor"]
+path = external/jobbernaut-tailor
+url = https://github.com/prlenterprises-ui/jobbernaut-tailor.git
 
-[submodule "repo5"]
-path = external/repo5
-url = https://github.com/prlenterprises-ui/repo5.git
+[submodule "Jobs_Applier_AI_Agent_AIHawk"]
+path = external/Jobs_Applier_AI_Agent_AIHawk
+url = https://github.com/prlenterprises-ui/Jobs_Applier_AI_Agent_AIHawk.git
