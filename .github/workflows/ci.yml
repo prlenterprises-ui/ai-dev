@@ -32,6 +32,14 @@ jobs:
       - name: Setup pnpm
         run: corepack enable && corepack prepare pnpm@latest --activate
 
+      - name: Ensure pnpm is available
+        run: |
+          if ! command -v pnpm >/dev/null 2>&1; then
+            echo "pnpm not found - installing globally"
+            npm install -g pnpm@latest
+          fi
+          pnpm -v
+
       - name: Install JS deps
         run: pnpm -w install --frozen-lockfile
 
