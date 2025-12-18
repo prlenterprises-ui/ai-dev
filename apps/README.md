@@ -110,6 +110,64 @@ Frontend will be available at:
 
 > Tip: `pnpm dev` runs `portal-python` and `portal-ui` in parallel via Turborepo; `pnpm build` will build the UI and build the backend Docker image.
 
+---
+
+## Containers & Production
+
+We provide Dockerfiles and docker-compose setups for local dev and production parity.
+
+### Build & run locally
+
+```bash
+# Build backend image
+docker build -t portal-python:local ./apps/portal-python
+
+docker run --rm --env-file apps/portal-python/.env -p 8000:8000 portal-python:local
+
+# Build UI image
+docker build -t portal-ui:local ./apps/portal-ui
+
+docker run --rm -p 5173:5173 portal-ui:local
+```
+
+### Docker Compose (dev)
+
+```bash
+docker compose -f docker-compose.dev.yml up --build
+```
+
+### Docker Compose (prod)
+
+```bash
+docker compose -f docker-compose.prod.yml up --build -d
+```
+
+### Publish to GHCR
+
+We push Docker images to GitHub Container Registry (`ghcr.io/<org>/ai-dev/<service>`).
+
+- To allow pushes from GitHub Actions, ensure the repository's workflow permissions allow the `packages: write` permission (already configured in CI workflow).
+- If you want to push manually, create a Personal Access Token with `write:packages` scope and run:
+
+```bash
+echo $GHCR_PAT | docker login ghcr.io -u <username> --password-stdin
+docker tag portal-python:local ghcr.io/<org>/ai-dev/portal-python:latest
+docker push ghcr.io/<org>/ai-dev/portal-python:latest
+```
+
+---
+
+## CI
+
+We run the following in CI (GitHub Actions):
+- `pnpm -w install` and `pnpm -w build` (Turbo)
+- Frontend lint & build
+- Python lint (ruff) & tests (pytest)
+- Build Python wheel and upload as an artifact
+- Build Docker images and push to GHCR on `main` (and on tags)
+
+Make sure to add any required secrets (if you want to use a PAT instead of `GITHUB_TOKEN`) to the repository settings under `Secrets` > `Actions`.
+
 ## Frontend → Backend Communication
 
 ### GraphQL (Primary)
