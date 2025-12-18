@@ -52,3 +52,14 @@ target-version = "py311"
 [tool.ruff.lint]
 select = ["E", "F", "I", "W"]
 
+# Explicit setuptools package discovery to avoid "flat-layout" errors during
+# editable builds on CI. This tells setuptools which packages to include.
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["ai*", "apis*"]
+
+# Define build backend explicitly for reproducible builds in CI
+[build-system]
+requires = ["setuptools>=65.5.1", "wheel"]
+build-backend = "setuptools.build_meta"
+
