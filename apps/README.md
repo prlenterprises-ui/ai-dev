@@ -58,21 +58,35 @@ apps/
 
 ## Quick Start
 
+### Monorepo (recommended)
+
+```bash
+# Install JS deps for the whole repo
+pnpm -w install
+
+# (Optional) Install Python deps for backend in a venv
+python -m venv .venv && source .venv/bin/activate
+cd apps/portal-python
+python -m pip install -e '.[dev]'
+```
+
+Start both (recommended):
+
+```bash
+pnpm dev
+```
+
+Or run per-package:
+
 ### 1. Start the Backend
 
 ```bash
 cd apps/portal-python
 
-# Install dependencies
-uv sync
-
-# Create .env file with your API keys
-cat > .env << EOF
-OPENROUTER_API_KEY=sk-or-v1-your-key-here
-EOF
-
-# Run the server
+# Run the server (local dev with reload)
 uv run python main.py
+# or via pnpm workspace helper
+pnpm --filter portal-python... dev
 ```
 
 Backend will be available at:
@@ -85,14 +99,16 @@ Backend will be available at:
 cd apps/portal-ui
 
 # Install dependencies
-npm install
+pnpm install
 
 # Run development server
-npm run dev
+pnpm run dev
 ```
 
 Frontend will be available at:
 - http://localhost:5173
+
+> Tip: `pnpm dev` runs `portal-python` and `portal-ui` in parallel via Turborepo; `pnpm build` will build the UI and build the backend Docker image.
 
 ## Frontend → Backend Communication
 
