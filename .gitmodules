@@ -17,3 +17,18 @@ url = https://github.com/prlenterprises-ui/jobbernaut-tailor.git
 [submodule "Jobs_Applier_AI_Agent_AIHawk"]
 path = external/Jobs_Applier_AI_Agent_AIHawk
 url = https://github.com/prlenterprises-ui/Jobs_Applier_AI_Agent_AIHawk.git
+[submodule "external/resume-lm"]
+	path = external/resume-lm
+	url = https://github.com/prlenterprises-ui/resume-lm.git
+[submodule "external/llm-council"]
+	path = external/llm-council
+	url = https://github.com/prlenterprises-ui/llm-council.git
+[submodule "external/Resume-Matcher"]
+	path = external/Resume-Matcher
+	url = https://github.com/prlenterprises-ui/Resume-Matcher.git
+[submodule "external/jobbernaut-tailor"]
+	path = external/jobbernaut-tailor
+	url = https://github.com/prlenterprises-ui/jobbernaut-tailor.git
+[submodule "external/Jobs_Applier_AI_Agent_AIHawk"]
+	path = external/Jobs_Applier_AI_Agent_AIHawk
+	url = https://github.com/prlenterprises-ui/Jobs_Applier_AI_Agent_AIHawk.git

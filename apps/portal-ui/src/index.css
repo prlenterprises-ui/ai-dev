@@ -1,0 +1,140 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Base colors */
+  --bg-primary: #0f0f12;
+  --bg-secondary: #1a1a20;
+  --bg-tertiary: #252530;
+  --text-primary: #f7f4f0;
+  --text-secondary: #a8a5a0;
+  --accent: #00c4d7;
+  --accent-hover: #1addf1;
+  --coral: #f95d4f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Gradient background effect */
+.gradient-bg {
+  background: 
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0, 196, 215, 0.15), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(249, 93, 79, 0.1), transparent),
+    var(--bg-primary);
+}
+
+/* Card styles */
+.card {
+  @apply bg-[#1a1a20] border border-[#2a2a35] rounded-2xl;
+  backdrop-filter: blur(10px);
+}
+
+.card-hover {
+  @apply transition-all duration-300;
+}
+
+.card-hover:hover {
+  @apply border-electric-500/50 shadow-lg shadow-electric-500/10;
+  transform: translateY(-2px);
+}
+
+/* Button styles */
+.btn-primary {
+  @apply px-6 py-3 bg-electric-500 text-white font-medium rounded-xl;
+  @apply hover:bg-electric-400 transition-all duration-200;
+  @apply focus:outline-none focus:ring-2 focus:ring-electric-400 focus:ring-offset-2 focus:ring-offset-[#0f0f12];
+}
+
+.btn-secondary {
+  @apply px-6 py-3 bg-[#252530] text-white font-medium rounded-xl border border-[#3a3a45];
+  @apply hover:bg-[#2a2a35] hover:border-[#4a4a55] transition-all duration-200;
+}
+
+/* Glow effects */
+.glow {
+  box-shadow: 0 0 40px rgba(0, 196, 215, 0.2);
+}
+
+.glow-coral {
+  box-shadow: 0 0 40px rgba(249, 93, 79, 0.2);
+}
+
+/* Text gradient */
+.text-gradient {
+  background: linear-gradient(135deg, #00c4d7 0%, #f95d4f 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3a3a45;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #4a4a55;
+}
+
+/* Markdown content styling */
+.markdown-content {
+  @apply leading-relaxed;
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3 {
+  @apply font-display font-semibold mt-6 mb-3;
+}
+
+.markdown-content p {
+  @apply mb-4;
+}
+
+.markdown-content code {
+  @apply font-mono text-sm bg-[#252530] px-2 py-1 rounded;
+}
+
+.markdown-content pre {
+  @apply bg-[#252530] p-4 rounded-lg overflow-x-auto my-4;
+}
+
+.markdown-content pre code {
+  @apply bg-transparent p-0;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  @apply ml-6 mb-4;
+}
+
+.markdown-content li {
+  @apply mb-2;
+}
+
+.markdown-content a {
+  @apply text-electric-400 hover:text-electric-300 underline;
+}
+
