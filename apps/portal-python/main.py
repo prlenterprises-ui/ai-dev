@@ -62,7 +62,7 @@ async def root():
         "modules": [
             "jobbernaut-tailor",
             "aihawk",
-            "llm-council", 
+            "llm-council",
             "resume-lm",
             "resume-matcher",
         ],

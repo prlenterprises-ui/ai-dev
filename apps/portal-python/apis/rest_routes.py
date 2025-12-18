@@ -13,7 +13,7 @@ from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional
+import json
 import asyncio
 
 router = APIRouter()
@@ -150,16 +150,24 @@ async def stream_council_responses():
             # Simulate API latency
             await asyncio.sleep(1)
 
-            yield f"data: {{'model': '{model}', 'status': 'responding'}}\n\n"
+            yield f"data: {json.dumps({'model': model, 'status': 'responding'})}\n\n"
             await asyncio.sleep(0.5)
 
-            yield f"data: {{'model': '{model}', 'content': 'Response from {model}...', 'complete': true}}\n\n"
+            payload = {
+                "model": model,
+                "content": f"Response from {model}...",
+                "complete": True,
+            }
+            yield f"data: {json.dumps(payload)}\n\n"
 
-        yield "data: {'stage': 'ranking', 'status': 'started'}\n\n"
+        payload = {"stage": "ranking", "status": "started"}
+        yield f"data: {json.dumps(payload)}\n\n"
         await asyncio.sleep(1)
-        yield "data: {'stage': 'synthesis', 'status': 'started'}\n\n"
+        payload = {"stage": "synthesis", "status": "started"}
+        yield f"data: {json.dumps(payload)}\n\n"
         await asyncio.sleep(1)
-        yield "data: {'stage': 'complete', 'final_answer': 'Synthesized response...'}\n\n"
+        payload = {"stage": "complete", "final_answer": "Synthesized response..."}
+        yield f"data: {json.dumps(payload)}\n\n"
 
     return StreamingResponse(
         generate(),
@@ -198,9 +206,20 @@ async def stream_tailoring_progress(job_id: str):
 
         for stage, step, progress in steps:
             await asyncio.sleep(2)  # Simulate processing time
-            yield f"data: {{'job_id': '{job_id}', 'stage': '{stage}', 'step': '{step}', 'progress': {progress}}}\n\n"
+            payload = {
+                "job_id": job_id,
+                "stage": stage,
+                "step": step,
+                "progress": progress,
+            }
+            yield f"data: {json.dumps(payload)}\n\n"
 
-        yield f"data: {{'job_id': '{job_id}', 'status': 'complete', 'outputs': {{'resume': '/outputs/{job_id}/resume.pdf', 'cover_letter': '/outputs/{job_id}/cover_letter.pdf'}}}}\n\n"
+        outputs = {
+            "resume": f"/outputs/{job_id}/resume.pdf",
+            "cover_letter": f"/outputs/{job_id}/cover_letter.pdf",
+        }
+        payload = {"job_id": job_id, "status": "complete", "outputs": outputs}
+        yield f"data: {json.dumps(payload)}\n\n"
 
     return StreamingResponse(
         generate(),
