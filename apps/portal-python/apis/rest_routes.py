@@ -9,12 +9,13 @@ are better suited for REST:
 - Server-sent events for real-time updates
 """
 
-from fastapi import APIRouter, UploadFile, File, HTTPException
+import asyncio
+import json
+from datetime import datetime
+
+from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from datetime import datetime
-import json
-import asyncio
 
 router = APIRouter()
 

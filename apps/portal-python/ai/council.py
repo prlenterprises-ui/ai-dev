@@ -10,11 +10,11 @@ Inspired by external/llm-council but integrated with our unified architecture.
 """
 
 import asyncio
+import re
 from dataclasses import dataclass
 from typing import Optional
-import re
 
-from .llm_clients import OpenRouterClient, LLMResponse
+from .llm_clients import LLMResponse, OpenRouterClient
 
 
 @dataclass

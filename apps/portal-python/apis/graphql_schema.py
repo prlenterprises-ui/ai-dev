@@ -16,7 +16,6 @@ from typing import Optional
 
 import strawberry
 
-
 # =============================================================================
 # TYPES - Data structures returned by the API
 # =============================================================================

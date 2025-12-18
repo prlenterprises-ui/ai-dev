@@ -13,8 +13,9 @@ import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Optional
-from dotenv import load_dotenv
+
 import httpx
+from dotenv import load_dotenv
 
 load_dotenv()
 
