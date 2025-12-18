@@ -130,6 +130,35 @@ docker build -t portal-ui:local ./apps/portal-ui
 docker run --rm -p 5173:5173 portal-ui:local
 ```
 
+### Convenience: Makefile
+
+We've added a `Makefile` at the repo root with convenient targets. Example usage:
+
+```bash
+# Install dependencies for the monorepo
+make install
+
+# Start both services locally via turbo
+make dev
+
+# Run lint and tests
+make lint
+make test
+
+# Build Docker images locally
+make docker-build
+make docker-build-ui
+
+# Start docker-compose (dev)
+make compose-up
+```
+
+---
+
+### Automated releases
+
+This repo uses **Release Drafter** to generate draft release notes automatically when changes are pushed to `main`. The configuration is stored at `.github/release-drafter.yml`. When you're ready to publish a release, create a tag (e.g., `v1.2.3`) and push it — CI already builds artifacts and uploads the wheel for tag pushes.
+
 ### Docker Compose (dev)
 
 ```bash
