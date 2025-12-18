@@ -48,6 +48,9 @@ jobs:
             pnpm -w install --no-frozen-lockfile
           fi
 
+      - name: Install UI deps
+        run: pnpm --filter portal-ui... install --no-frozen-lockfile
+
       - name: Run frontend lint
         run: pnpm --filter portal-ui... lint
 
