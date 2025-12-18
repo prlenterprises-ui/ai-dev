@@ -9,7 +9,8 @@ WORKDIR /app
 
 # Copy pyproject and install dependencies
 COPY pyproject.toml .
-COPY pyproject.lock . 2>/dev/null || true
+# Optional lockfile may not exist in source; skip copying if absent
+# (Docker's COPY fails if the file is missing, so we don't attempt to copy it.)
 RUN python -m pip install --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir .
 
