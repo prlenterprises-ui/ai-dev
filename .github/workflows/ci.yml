@@ -36,7 +36,7 @@ jobs:
         run: pnpm -w install --frozen-lockfile
 
       - name: Run frontend lint
-        run: pnpm --filter portal-ui... lint || true
+        run: pnpm --filter portal-ui... lint
 
       - name: Build JS packages
         run: pnpm -w build
@@ -54,8 +54,7 @@ jobs:
 
       - name: Run ruff (lint)
         working-directory: ./apps/portal-python
-        run: |
-          python -m ruff check . || true
+        run: python -m ruff check .
 
       - name: Run Python tests
         working-directory: ./apps/portal-python
@@ -86,7 +85,8 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          # Use a PAT if provided, otherwise fall back to the GITHUB_TOKEN
+          password: ${{ secrets.GHCR_PAT || secrets.GITHUB_TOKEN }}
 
       - name: Build and push backend image
         uses: docker/build-push-action@v5

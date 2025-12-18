@@ -166,7 +166,11 @@ We run the following in CI (GitHub Actions):
 - Build Python wheel and upload as an artifact
 - Build Docker images and push to GHCR on `main` (and on tags)
 
-Make sure to add any required secrets (if you want to use a PAT instead of `GITHUB_TOKEN`) to the repository settings under `Secrets` > `Actions`.
+Make sure to add any required secrets to the repository settings under `Settings` > `Secrets` > `Actions`:
+
+- `GHCR_PAT` (optional) — a Personal Access Token with `write:packages` scope if you prefer using a PAT for GHCR pushes instead of `GITHUB_TOKEN`. The CI will use `GHCR_PAT` if present, otherwise it falls back to `GITHUB_TOKEN`.
+
+Additionally, note that the CI **enforces** frontend (ESLint) and backend (ruff) linting; failing lint will fail the workflow. If you want non-blocking lint for a while, tell me and I can relax this enforcement.
 
 ## Frontend → Backend Communication
 
