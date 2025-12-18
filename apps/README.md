@@ -201,6 +201,19 @@ Make sure to add any required secrets to the repository settings under `Settings
 
 Additionally, note that the CI **enforces** frontend (ESLint) and backend (ruff) linting; failing lint will fail the workflow. If you want non-blocking lint for a while, tell me and I can relax this enforcement.
 
+---
+
+## Branch protection (recommended)
+
+A branch protection workflow has been added to help you enforce best practices on `main`. It is a manual workflow (run-once via `workflow_dispatch`) that configures the following for the `main` branch:
+
+- Require status checks to pass (the `CI` workflow)
+- Enforce admin protections
+- Require at least 1 approving review for PRs
+
+To enable it, go to the Actions tab, select **Configure Branch Protection**, and click **Run workflow**. The workflow will attempt to configure protection using the `GITHUB_TOKEN`; if your org restricts that, you may need to run it with a token that has admin privileges.
+
+
 ## Frontend → Backend Communication
 
 ### GraphQL (Primary)
