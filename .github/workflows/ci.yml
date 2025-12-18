@@ -40,7 +40,13 @@ jobs:
           pnpm -v
 
       - name: Install JS deps
-        run: pnpm -w install --frozen-lockfile
+        run: |
+          if [ -f pnpm-lock.yaml ]; then
+            pnpm -w install --frozen-lockfile
+          else
+            echo "pnpm-lock.yaml not found at repo root; running install without frozen-lockfile"
+            pnpm -w install --no-frozen-lockfile
+          fi
 
       - name: Run frontend lint
         run: pnpm --filter portal-ui... lint
