@@ -5,6 +5,7 @@ Searches multiple job boards for positions matching keywords.
 
 import asyncio
 import httpx
+import os
 from typing import List, Dict, Optional
 from datetime import datetime
 import logging
@@ -44,6 +45,7 @@ class JobSearchService:
     
     def __init__(self):
         self.timeout = httpx.Timeout(30.0)
+        self.jsearch_api_key = os.getenv("JSEARCH_API_KEY")  # RapidAPI key for JSearch
         
     async def search_jobs(
         self,
@@ -69,6 +71,12 @@ class JobSearchService:
             self._search_remotive(keywords, limit=20),
             self._search_arbeitnow(keywords, limit=20),
         ]
+        
+        # Add JSearch if API key is configured
+        if self.jsearch_api_key:
+            tasks.append(self._search_jsearch(keywords, location, limit=30))
+        else:
+            logger.warning("JSearch API key not configured. Set JSEARCH_API_KEY env var for LinkedIn, Indeed, Glassdoor results.")
         
         results = await asyncio.gather(*tasks, return_exceptions=True)
         
@@ -168,6 +176,74 @@ class JobSearchService:
                 
         except Exception as e:
             logger.error(f"Arbeitnow search failed: {e}")
+            return []
+    
+    async def _search_jsearch(self, keywords: str, location: Optional[str] = None, limit: int = 30) -> List[JobSearchResult]:
+        """
+        Search JSearch API (RapidAPI) for jobs from LinkedIn, Indeed, Glassdoor, etc.
+        Includes jobs from Amazon, Google, Microsoft, and other major companies.
+        
+        Get API key from: https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch
+        Free tier: 1,000 requests/month
+        """
+        if not self.jsearch_api_key:
+            logger.warning("JSearch API key not configured")
+            return []
+        
+        try:
+            headers = {
+                "X-RapidAPI-Key": self.jsearch_api_key,
+                "X-RapidAPI-Host": "jsearch.p.rapidapi.com"
+            }
+            
+            params = {
+                "query": keywords,
+                "page": "1",
+                "num_pages": "1",
+                "date_posted": "month"  # Jobs from last month
+            }
+            
+            if location:
+                params["location"] = location
+            
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.get(
+                    "https://jsearch.p.rapidapi.com/search",
+                    headers=headers,
+                    params=params
+                )
+                response.raise_for_status()
+                data = response.json()
+                
+                jobs = []
+                for job_data in data.get("data", [])[:limit]:
+                    # Extract salary if available
+                    salary = None
+                    if job_data.get("job_salary_currency") and job_data.get("job_min_salary"):
+                        min_sal = job_data.get("job_min_salary", 0)
+                        max_sal = job_data.get("job_max_salary", 0)
+                        currency = job_data.get("job_salary_currency", "USD")
+                        if max_sal:
+                            salary = f"{currency} {min_sal:,.0f} - {max_sal:,.0f}"
+                        elif min_sal:
+                            salary = f"{currency} {min_sal:,.0f}+"
+                    
+                    jobs.append(JobSearchResult(
+                        title=job_data.get("job_title", ""),
+                        company=job_data.get("employer_name", ""),
+                        location=job_data.get("job_city", job_data.get("job_country", "Remote")),
+                        description=job_data.get("job_description", ""),
+                        url=job_data.get("job_apply_link", job_data.get("job_google_link", "")),
+                        posted_date=job_data.get("job_posted_at_datetime_utc"),
+                        salary=salary,
+                        source=f"jsearch-{job_data.get('job_publisher', 'unknown').lower()}"
+                    ))
+                
+                logger.info(f"JSearch: Found {len(jobs)} jobs (sources: LinkedIn, Indeed, Glassdoor, ZipRecruiter)")
+                return jobs
+                
+        except Exception as e:
+            logger.error(f"JSearch search failed: {e}")
             return []
     
     def to_dict(self, job: JobSearchResult) -> Dict:
