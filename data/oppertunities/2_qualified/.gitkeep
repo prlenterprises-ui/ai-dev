@@ -1,0 +1,13 @@
+# Qualified Jobs
+
+Jobs that passed remote verification + match analysis.
+
+Each job gets its own folder:
+```
+company_role/
+├── job.md              # From job_template
+├── match_analysis.md   # From match_analysis_template
+└── notes.md            # Research, contacts, strategy
+```
+
+

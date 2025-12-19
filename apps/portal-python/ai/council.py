@@ -30,6 +30,7 @@ DEFAULT_CONFIG = CouncilConfig(
     council_models=[
         "openai/gpt-4o",
         "anthropic/claude-3-5-sonnet",
+        "anthropic/claude-3-5-haiku",
         "google/gemini-2.0-flash-exp",
         "meta-llama/llama-3.3-70b-instruct",
     ],
