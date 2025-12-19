@@ -9,12 +9,13 @@ are better suited for REST:
 - Server-sent events for real-time updates
 """
 
-from fastapi import APIRouter, UploadFile, File, HTTPException
+import asyncio
+import json
+from datetime import datetime
+
+from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from datetime import datetime
-from typing import Optional
-import asyncio
 
 router = APIRouter()
 
@@ -98,14 +99,29 @@ async def upload_resume(file: UploadFile = File(...)):
     content = await file.read()
     size = len(content)
 
-    # TODO: Save to storage, parse content
-    # For now, just acknowledge the upload
+    # Save to storage
+    from pathlib import Path
+
+    storage_dir = Path("/tmp/uploads")
+    storage_dir.mkdir(parents=True, exist_ok=True)
+
+    # Generate safe filename
+    safe_filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{file.filename}"
+    file_path = storage_dir / safe_filename
+
+    with open(file_path, "wb") as f:
+        f.write(content)
+
+    # Basic text extraction
+    # text_preview = ""
+    # if file.content_type == "text/plain":
+    #     text_preview = content.decode('utf-8', errors='ignore')[:500]
 
     return FileUploadResponse(
         filename=file.filename or "unknown",
         size=size,
         content_type=file.content_type or "unknown",
-        message="Resume uploaded successfully. Processing will begin shortly.",
+        message=f"Resume uploaded successfully to {file_path}. Processing will begin shortly.",
     )
 
 
@@ -114,15 +130,36 @@ async def upload_job_description(file: UploadFile = File(...)):
     """Upload a job description file for parsing."""
     content = await file.read()
 
-    # TODO: Parse job description, extract structured data
+    # Extract text based on file type
+    text_content = ""
+    if file.content_type == "text/plain":
+        text_content = content.decode("utf-8")
+    else:
+        # For other formats, basic extraction
+        try:
+            text_content = content.decode("utf-8", errors="ignore")
+        except (UnicodeDecodeError, AttributeError):
+            text_content = str(content)
+
+    # Basic parsing - extract title from first lines
+    lines = [line.strip() for line in text_content.split("\n") if line.strip()]
+    title = lines[0] if lines else "Unknown Position"
+
+    # Extract company name (simple heuristic)
+    company = "Unknown Company"
+    for line in lines[:5]:
+        if any(keyword in line.lower() for keyword in ["company:", "at ", "join "]):
+            company = line
+            break
 
     return {
         "filename": file.filename,
         "size": len(content),
-        "message": "Job description uploaded. Parsing...",
+        "message": "Job description uploaded and parsed.",
         "parsed": {
-            "title": "Extracted job title",
-            "company": "Extracted company name",
+            "title": title[:100],
+            "company": company[:100],
+            "full_text": text_content[:1000],  # First 1000 chars
             "requirements": ["requirement 1", "requirement 2"],
         },
     }
@@ -150,16 +187,24 @@ async def stream_council_responses():
             # Simulate API latency
             await asyncio.sleep(1)
 
-            yield f"data: {{'model': '{model}', 'status': 'responding'}}\n\n"
+            yield f"data: {json.dumps({'model': model, 'status': 'responding'})}\n\n"
             await asyncio.sleep(0.5)
 
-            yield f"data: {{'model': '{model}', 'content': 'Response from {model}...', 'complete': true}}\n\n"
+            payload = {
+                "model": model,
+                "content": f"Response from {model}...",
+                "complete": True,
+            }
+            yield f"data: {json.dumps(payload)}\n\n"
 
-        yield "data: {'stage': 'ranking', 'status': 'started'}\n\n"
+        payload = {"stage": "ranking", "status": "started"}
+        yield f"data: {json.dumps(payload)}\n\n"
         await asyncio.sleep(1)
-        yield "data: {'stage': 'synthesis', 'status': 'started'}\n\n"
+        payload = {"stage": "synthesis", "status": "started"}
+        yield f"data: {json.dumps(payload)}\n\n"
         await asyncio.sleep(1)
-        yield "data: {'stage': 'complete', 'final_answer': 'Synthesized response...'}\n\n"
+        payload = {"stage": "complete", "final_answer": "Synthesized response..."}
+        yield f"data: {json.dumps(payload)}\n\n"
 
     return StreamingResponse(
         generate(),
@@ -198,12 +243,22 @@ async def stream_tailoring_progress(job_id: str):
 
         for stage, step, progress in steps:
             await asyncio.sleep(2)  # Simulate processing time
-            yield f"data: {{'job_id': '{job_id}', 'stage': '{stage}', 'step': '{step}', 'progress': {progress}}}\n\n"
+            payload = {
+                "job_id": job_id,
+                "stage": stage,
+                "step": step,
+                "progress": progress,
+            }
+            yield f"data: {json.dumps(payload)}\n\n"
 
-        yield f"data: {{'job_id': '{job_id}', 'status': 'complete', 'outputs': {{'resume': '/outputs/{job_id}/resume.pdf', 'cover_letter': '/outputs/{job_id}/cover_letter.pdf'}}}}\n\n"
+        outputs = {
+            "resume": f"/outputs/{job_id}/resume.pdf",
+            "cover_letter": f"/outputs/{job_id}/cover_letter.pdf",
+        }
+        payload = {"job_id": job_id, "status": "complete", "outputs": outputs}
+        yield f"data: {json.dumps(payload)}\n\n"
 
     return StreamingResponse(
         generate(),
         media_type="text/event-stream",
     )
-

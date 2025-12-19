@@ -1,0 +1,74 @@
+version: "3.8"
+
+networks:
+  ai-dev-network:
+    driver: bridge
+
+volumes:
+  uploads:
+  outputs:
+
+services:
+  backend:
+    build:
+      context: ./apps/portal-python
+      dockerfile: Dockerfile
+    container_name: ai-dev-backend
+    restart: unless-stopped
+    env_file:
+      - ./apps/portal-python/.env
+    environment:
+      - ENVIRONMENT=production
+      - HOST=0.0.0.0
+      - PORT=8000
+      - LOG_FORMAT=json
+      - LOG_LEVEL=INFO
+    ports:
+      - "8000:8000"
+    volumes:
+      - uploads:/tmp/uploads
+      - outputs:/app/outputs
+    networks:
+      - ai-dev-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  ui:
+    build:
+      context: ./apps/portal-ui
+      dockerfile: Dockerfile
+    container_name: ai-dev-ui
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    networks:
+      - ai-dev-network
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M

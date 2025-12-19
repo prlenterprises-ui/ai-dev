@@ -1,0 +1,95 @@
+Job Posting Date: 11-06-2025
+Job Requisition ID: JR36878
+Teams: Engineering
+Work Type: Remote
+
+Netflix is one of the world's leading entertainment services, with over 300 million paid memberships in over 190 countries enjoying TV series, films and games across a wide variety of genres and languages. Members can play, pause and resume watching as much as they want, anytime, anywhere, and can change their plans at any time.
+
+ The Cloud Infrastructure Engineering organization exists to manage that massive scale, constantly innovating to increase fleet-wide agility, efficiency, and reliability of the Netflix cloud infrastructure, while solving scale problems that we are the first to ever hit. We build, operate, and maintain Compute, Network, and Storage services so that developers at Netflix can rely on foundational building blocks when entertaining hundreds of millions of customers around the world. We run one of the largest cloud footprints. Join us as we push the boundaries of performance and resilience, empowering developers to create groundbreaking applications on a reliable platform.
+
+| Who we are
+Netflix’s Compute organization owns our internet-scale cloud footprint. We constantly innovate to increase fleet-wide agility, efficiency, and reliability of this infrastructure. We build, operate, and maintain Compute services so that Netflix developers can rely on foundational building blocks that enable a “set it and forget it” approach to achieving scalability and cost efficiency.
+
+We are looking for a highly skilled and accomplished engineer with a passion for tackling the complex challenges to drive core components of Netflix’s Cloud Compute Infrastructure. The Compute Control Plane and Capacity team owns the services that are essential to ensuring there is always capacity (be it EC2 instances or containers) to meet every Netflix need, including things like serving the largest internet Live stream in history. Now, we want to tackle the challenge of orchestrating select workloads across both physical and cloud compute.
+
+| What you could work on
+Netflix’s Compute Control Plane launching millions of containers on our Kubernetes-based container platform evolving its performance, efficiency and reach.
+
+Architect and implement solutions to run select workloads on a combination of cloud-based and on-premises compute resources.
+
+Drive evolution of the systems and tooling used to manage hundreds of millions of dollars annually of Compute capacity at Netflix.
+
+Drive engineering excellence and set a high bar for operational rigor within the team.
+
+Form strong cross-functional partnerships to achieve alignment with many engineering teams, ensuring our solutions meet their needs while maintaining our focus on scalability, reliability, and efficiency.
+
+Drive large initiatives to completion in tandem with partner and peer organizations.
+
+| What We’ll Expect From You
+We are seeking an engineer who is comfortable writing, improving, and maintaining critical services at our scale. Below are the specific behaviors and competencies important for this role.
+
+Qualifications
+
+Hands-on experience with running containerized platforms.
+
+Strong understanding of cloud architectures and distributed systems with deep experience operating critical Tier0 services at scale.
+
+Have worked on a platform team where other engineers were your customers.
+
+Able to break down complexity, iterate, and communicate progress to a wide variety of partners and stakeholders.
+
+What Sets You Apart
+
+Experience with running compute on multiple platforms, both cloud-based and on-premises.
+
+Proven track record of timely execution with upholding engineering excellence while building trust with partners/customers.
+
+You will be successful in this role if you
+
+Are comfortable with ambiguity: You are curious and enjoy working on ambiguous problems where the solutions still need to be defined. You excel at cross-functional ownership and driving alignment to reach a decision, even when it is outside of your wheelhouse.
+
+Have a deep sense of ownership: You take deep ownership of your projects. You feel pride in delivering great work and pay attention to the details.
+
+Have strong communication skills: You are proficient in verbal and written mediums at explaining topics the audience was unfamiliar with.
+
+Provide and take feedback: You are proficient at actively soliciting and providing feedback (technical, behavioral, instilling team norms).
+
+Are selfless: You seek what is best for Netflix and make time to help colleagues across the team succeed.
+
+Are a self-starter: You are curious and take initiative to identify and solve problems.
+
+| What to Expect From Us
+Opportunities for high impact - your work is crucial for the ongoing success of Netflix.
+
+Stunning Colleagues - you will be working with other excellent people with diverse perspectives, who value collaboration, working to excel as the “dream team”.
+
+Energizing Challenges - there is a wealth of opportunity when working on complex technical projects and our culture both enables and encourages you to rise to the challenges.
+
+Feedback – you will constantly have opportunities for growth because meaningful positive and constructive feedback is part of everyday life at Netflix.
+
+Our culture is unique, and we live by our values, so it’s worth learning more about Netflix culture. Want to know more about our team? You can learn about us:
+
+Evolving Region Evacuation
+
+Region Evacuation Reimagined
+
+Consistent caching mechanism in Titus Gateway
+
+Auto Scaling Production Services on Titus
+
+Noisy Neighbor Detection with eBPF
+
+Titus, the Netflix Container Management Platform
+
+****************
+
+Our compensation structure consists solely of an annual salary; we do not have bonuses. You choose each year how much of your compensation you want in salary versus stock options. To determine your personal top of market compensation, we rely on market indicators and consider your specific job family, background, skills, and experience to determine your compensation in the market range. The range for this role is $100,000 - $720,000.
+
+Netflix provides comprehensive benefits including Health Plans, Mental Health support, a 401(k) Retirement Plan with employer match, Stock Option Program, Disability Programs, Health Savings and Flexible Spending Accounts, Family-forming benefits, and Life and Serious Injury Benefits. We also offer paid leave of absence programs.  Full-time hourly employees accrue 35 days annually for paid time off to be used for vacation, holidays, and sick paid time off. Full-time salaried employees are immediately entitled to flexible time off. See more details about our Benefits here.
+
+Inclusion is a Netflix value and we strive to host a meaningful interview experience for all candidates. If you want an accommodation/adjustment for a disability or any other reason during the hiring process, please send a request to your recruiting partner.
+
+We are an equal-opportunity employer and celebrate diversity, recognizing that diversity builds stronger teams. We approach diversity and inclusion seriously and thoughtfully. We do not discriminate on the basis of race, religion, color, ancestry, national origin, caste, sex, sexual orientation, gender, gender identity or expression, age, disability, medical condition, pregnancy, genetic makeup, marital status, or military service.
+
+Job is open for no less than 7 days and will be removed when the position is filled.
+

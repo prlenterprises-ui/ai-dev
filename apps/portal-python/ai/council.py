@@ -10,11 +10,11 @@ Inspired by external/llm-council but integrated with our unified architecture.
 """
 
 import asyncio
+import re
 from dataclasses import dataclass
 from typing import Optional
-import re
 
-from .llm_clients import BaseLLMClient, OpenRouterClient, LLMResponse
+from .llm_clients import LLMResponse, OpenRouterClient
 
 
 @dataclass
@@ -30,6 +30,7 @@ DEFAULT_CONFIG = CouncilConfig(
     council_models=[
         "openai/gpt-4o",
         "anthropic/claude-3-5-sonnet",
+        "anthropic/claude-3-5-haiku",
         "google/gemini-2.0-flash-exp",
         "meta-llama/llama-3.3-70b-instruct",
     ],
@@ -70,9 +71,7 @@ class LLMCouncil:
         }
 
         # Create chairman client
-        self.chairman_client = OpenRouterClient(
-            model=self.config.chairman_model, api_key=api_key
-        )
+        self.chairman_client = OpenRouterClient(model=self.config.chairman_model, api_key=api_key)
 
     async def stage1_collect_responses(self, query: str) -> dict[str, LLMResponse]:
         """
@@ -109,7 +108,6 @@ class LLMCouncil:
         models = list(responses.keys())
         labels = [chr(65 + i) for i in range(len(models))]  # A, B, C, ...
         label_to_model = dict(zip(labels, models))
-        model_to_label = dict(zip(models, labels))
 
         # Build anonymized responses text
         anonymized_text = ""
@@ -163,7 +161,8 @@ Provide brief reasoning for your ranking, then end with the FINAL RANKING sectio
     def _parse_ranking(self, text: str, valid_labels: list[str]) -> list[str]:
         """Parse ranking from model response."""
         # Look for FINAL RANKING section
-        ranking_match = re.search(r"FINAL RANKING:(.+?)(?:\n\n|\Z)", text, re.DOTALL | re.IGNORECASE)
+        pattern = r"FINAL RANKING:(.+?)(?:\n\n|\Z)"
+        ranking_match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
 
         if ranking_match:
             ranking_text = ranking_match.group(1)
@@ -226,8 +225,13 @@ Provide brief reasoning for your ranking, then end with the FINAL RANKING sectio
         # Build context for chairman
         responses_text = ""
         for model, response in responses.items():
-            rank_info = next((r for m, r in aggregate_rankings if m == model), None)
-            rank_str = f" (Ranked #{aggregate_rankings.index((model, rank_info)) + 1})" if rank_info else ""
+            rank_index = None
+            for i, (m, _) in enumerate(aggregate_rankings, start=1):
+                if m == model:
+                    rank_index = i
+                    break
+
+            rank_str = f" (Ranked #{rank_index})" if rank_index is not None else ""
             responses_text += f"\n\n--- {model}{rank_str} ---\n{response.content}"
 
         # Build rankings summary
@@ -235,22 +239,23 @@ Provide brief reasoning for your ranking, then end with the FINAL RANKING sectio
         for i, (model, avg_rank) in enumerate(aggregate_rankings, 1):
             rankings_summary += f"{i}. {model} (avg position: {avg_rank:.2f})\n"
 
-        synthesis_prompt = f"""You are the Chairman of an LLM Council. Your role is to synthesize the best possible answer from multiple AI responses.
-
-ORIGINAL QUESTION: {query}
-
-COUNCIL RESPONSES:{responses_text}
-
-PEER REVIEW RESULTS:
-{rankings_summary}
-
-Your task:
-1. Consider all responses, giving more weight to higher-ranked ones
-2. Identify the most accurate, complete, and insightful points
-3. Synthesize a comprehensive final answer that combines the best elements
-4. Ensure the answer is clear, well-structured, and directly addresses the question
-
-Provide your synthesized answer:"""
+        synthesis_prompt = (
+            "You are the Chairman of an LLM Council. "
+            "Your role is to synthesize the best possible answer "
+            "from multiple AI responses.\n\n"
+            f"ORIGINAL QUESTION: {query}\n\n"
+            "COUNCIL RESPONSES:\n"
+            f"{responses_text}\n\n"
+            "PEER REVIEW RESULTS:\n"
+            f"{rankings_summary}\n\n"
+            "Your task:\n"
+            "1. Consider all responses, giving more weight to higher-ranked ones\n"
+            "2. Identify the most accurate, complete, and insightful points\n"
+            "3. Synthesize a comprehensive final answer that combines the best elements\n"
+            "4. Ensure the answer is clear, well-structured "
+            "and directly addresses the question\n\n"
+            "Provide your synthesized answer:"
+        )
 
         response = await self.chairman_client.query(synthesis_prompt)
         return response.content
@@ -275,9 +280,7 @@ Provide your synthesized answer:"""
 
         # Stage 3: Chairman synthesis
         print("Stage 3: Chairman synthesis...")
-        final_answer = await self.stage3_synthesize(
-            query, responses, rankings, aggregate_rankings
-        )
+        final_answer = await self.stage3_synthesize(query, responses, rankings, aggregate_rankings)
 
         return CouncilResult(
             query=query,
@@ -287,4 +290,3 @@ Provide your synthesized answer:"""
             final_answer=final_answer,
             chairman_model=self.config.chairman_model,
         )
-

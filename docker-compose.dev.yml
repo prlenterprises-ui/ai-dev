@@ -1,0 +1,53 @@
+version: "3.8"
+
+networks:
+  ai-dev-network:
+    driver: bridge
+
+volumes:
+  uploads:
+  outputs:
+
+services:
+  backend:
+    build:
+      context: ./apps/portal-python
+      dockerfile: Dockerfile
+    container_name: ai-dev-backend-dev
+    volumes:
+      - ./apps/portal-python:/app
+      - uploads:/tmp/uploads
+      - outputs:/app/outputs
+    env_file:
+      - ./apps/portal-python/.env
+    environment:
+      - ENVIRONMENT=development
+      - LOG_FORMAT=text
+      - LOG_LEVEL=DEBUG
+    ports:
+      - "8000:8000"
+    networks:
+      - ai-dev-network
+    command: ["uvicorn", "main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  ui:
+    build:
+      context: ./apps/portal-ui
+      dockerfile: Dockerfile
+    container_name: ai-dev-ui-dev
+    volumes:
+      - ./apps/portal-ui:/app:delegated
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    networks:
+      - ai-dev-network
+    depends_on:
+      - backend
+    entrypoint: ["sh", "-c", "corepack enable && pnpm install --frozen-lockfile && pnpm dev --host 0.0.0.0"]

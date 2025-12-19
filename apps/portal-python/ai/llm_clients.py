@@ -3,7 +3,7 @@ LLM Client Wrappers - Unified interface for multiple LLM providers.
 
 Supports:
 - OpenAI (GPT-4, GPT-4o)
-- Anthropic (Claude 3, Claude 3.5)
+- Anthropic (Claude 3, Claude 3.5, Claude Haiku 4.5)
 - Google (Gemini Pro)
 - OpenRouter (access to many models via single API)
 - Ollama (local models)
@@ -13,6 +13,7 @@ import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Optional
+
 import httpx
 from dotenv import load_dotenv
 
@@ -88,7 +89,7 @@ class OpenAIClient(BaseLLMClient):
 
 
 class AnthropicClient(BaseLLMClient):
-    """Anthropic API client (Claude 3, Claude 3.5)."""
+    """Anthropic API client (Claude 3, Claude 3.5, Claude Haiku 4.5)."""
 
     def __init__(self, model: str = "claude-3-5-sonnet-20241022", api_key: Optional[str] = None):
         self.model = model
@@ -256,4 +257,3 @@ def create_client(provider: str, model: Optional[str] = None, **kwargs) -> BaseL
 
     client_class, default_model = providers[provider]
     return client_class(model=model or default_model, **kwargs)
-

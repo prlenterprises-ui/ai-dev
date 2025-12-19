@@ -16,7 +16,6 @@ from typing import Optional
 
 import strawberry
 
-
 # =============================================================================
 # TYPES - Data structures returned by the API
 # =============================================================================
@@ -238,46 +237,142 @@ class Mutation:
         2. Anonymous peer review and ranking
         3. Chairman synthesis of final answer
         """
-        # TODO: Integrate with ai/llm_council.py
-        # For now, return mock data
-        return CouncilDeliberation(
-            query=input.query,
-            individual_responses=[
+        import os
+
+        from ..ai.council import LLMCouncil
+
+        # Get API key from environment
+        api_key = os.getenv("OPENROUTER_API_KEY")
+        if not api_key:
+            # Return error as a deliberation result
+            error_msg = (
+                "Error: OPENROUTER_API_KEY not configured. "
+                "Please set the API key to use the LLM Council."
+            )
+            return CouncilDeliberation(
+                query=input.query,
+                individual_responses=[],
+                rankings=[],
+                final_answer=error_msg,
+                chairman_model="none",
+            )
+
+        # Run council deliberation
+        council = LLMCouncil(api_key=api_key)
+        try:
+            result = await council.deliberate(input.query)
+
+            # Convert to GraphQL types
+            responses = [
                 LLMResponse(
-                    model="gpt-4",
-                    content="GPT-4's response...",
-                    tokens_used=150,
-                    latency_ms=1200,
-                ),
-                LLMResponse(
-                    model="claude-3",
-                    content="Claude's response...",
-                    tokens_used=180,
-                    latency_ms=1100,
-                ),
-            ],
-            rankings=["claude-3", "gpt-4"],
-            final_answer="Synthesized answer from the council...",
-            chairman_model="gemini-pro",
-        )
+                    model=model,
+                    content=resp.content,
+                    tokens_used=resp.tokens_used,
+                    latency_ms=resp.latency_ms,
+                )
+                for model, resp in result.stage1_responses.items()
+            ]
+
+            rankings = [model for model, _ in result.aggregate_rankings]
+
+            return CouncilDeliberation(
+                query=result.query,
+                individual_responses=responses,
+                rankings=rankings,
+                final_answer=result.final_answer,
+                chairman_model=result.chairman_model,
+            )
+        except Exception as e:
+            # Return error in deliberation format
+            return CouncilDeliberation(
+                query=input.query,
+                individual_responses=[],
+                rankings=[],
+                final_answer=f"Error during deliberation: {str(e)}",
+                chairman_model="error",
+            )
 
     @strawberry.mutation
     async def match_resume(self, input: ResumeMatchInput) -> ResumeScore:
         """
         Analyze how well a resume matches a job description.
 
-        Uses local Ollama model for privacy-preserving analysis.
+        Uses basic keyword matching and ATS compatibility checks.
         """
-        # TODO: Integrate with ai/resume_matcher.py
+        # Basic keyword extraction and matching
+        resume_lower = input.resume_text.lower()
+        job_lower = input.job_description.lower()
+
+        # Extract keywords from job description (simple approach)
+        import re
+
+        job_keywords = set(re.findall(r"\b[a-z]{3,}\b", job_lower))
+        resume_keywords = set(re.findall(r"\b[a-z]{3,}\b", resume_lower))
+
+        # Common technical keywords to prioritize
+        tech_keywords = {
+            "python",
+            "java",
+            "javascript",
+            "typescript",
+            "golang",
+            "react",
+            "vue",
+            "kubernetes",
+            "docker",
+            "aws",
+            "azure",
+            "gcp",
+            "sql",
+            "nosql",
+            "distributed",
+            "microservices",
+            "api",
+            "rest",
+            "graphql",
+            "kafka",
+            "redis",
+            "postgresql",
+            "mongodb",
+            "elasticsearch",
+        }
+
+        # Calculate keyword match
+        tech_in_job = job_keywords & tech_keywords
+        tech_in_resume = resume_keywords & tech_keywords
+        tech_match = len(tech_in_job & tech_in_resume)
+        tech_total = len(tech_in_job) if tech_in_job else 1
+
+        keyword_score = (tech_match / tech_total) * 100
+
+        # ATS compatibility checks
+        ats_score = 70.0
+        suggestions = []
+
+        if input.resume_text.count("\n") < 20:
+            ats_score -= 10
+            suggestions.append("Add more content - resume seems too short")
+
+        if len(re.findall(r"\d+%|\d+x|\$\d+", input.resume_text)) < 3:
+            ats_score -= 5
+            suggestions.append("Add more quantifiable achievements with numbers")
+
+        # Check for missing tech keywords
+        missing_tech = tech_in_job - tech_in_resume
+        if missing_tech:
+            suggestions.append(f"Consider adding keywords: {', '.join(list(missing_tech)[:5])}")
+
+        # Overall score (weighted average)
+        overall_score = (keyword_score * 0.6) + (ats_score * 0.4)
+
+        if not suggestions:
+            suggestions.append("Resume looks well-matched to the job description")
+
         return ResumeScore(
-            overall_score=78.5,
-            keyword_match=82.0,
-            ats_compatibility=75.0,
-            suggestions=[
-                "Add more quantifiable achievements",
-                "Include keywords: 'distributed systems', 'microservices'",
-                "Shorten bullet points to under 118 characters for ATS",
-            ],
+            overall_score=round(overall_score, 1),
+            keyword_match=round(keyword_score, 1),
+            ats_compatibility=ats_score,
+            suggestions=suggestions,
         )
 
     @strawberry.mutation
@@ -292,14 +387,15 @@ class Mutation:
         4. Resume and cover letter generation
         5. PDF compilation
         """
-        # TODO: Integrate with python/jobbernaut_service.py
-        return JobApplication(
-            id="app-new",
-            job_title=input.job_title,
-            company=input.company,
-            status="pending",
-            created_at=datetime.now(),
-        )
+        # Create application record
+        # In production, this would save to database
+        # JobApplication(
+        #     id=app_id,
+        #     job_title=input.job_title,
+        #     company=input.company,
+        #     status="pending",
+        #     created_at=datetime.now(),
+        # )
 
 
 # =============================================================================
@@ -307,4 +403,3 @@ class Mutation:
 # =============================================================================
 
 schema = strawberry.Schema(query=Query, mutation=Mutation)
-

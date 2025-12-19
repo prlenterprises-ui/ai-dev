@@ -1,0 +1,80 @@
+Job Posting Date: 11-26-2025
+Job Requisition ID: JR37161
+Teams: Engineering
+Work Type: Remote
+
+Netflix is one of the world's leading entertainment services, with over 300 million paid memberships in over 190 countries enjoying TV series, films and games across a wide variety of genres and languages. Members can play, pause and resume watching as much as they want, anytime, anywhere, and can change their plans at any time.
+
+Netflix is re-imagining entertainment with over 300 million paid memberships in over 190 countries on millions of devices. One of the ways we do this is by using insights from data to optimize for the best customer experience. The Commerce Insights and Data Products Engineering team is responsible for data critical to optimizing our product experiences across various product canvases for both current and future Netflix members.  Our work empowers product managers and business leaders to rapidly experiment and innovate on product experiences that drive towards our goal to “Entertain the world”. This translates to building the technical substrate that powers data for the machine learning models and algorithms behind our Commerce, Identity, and Membership experiences.
+
+ML is central to improving pricing, payments, identity, acquisition, fraud prevention, consumer experience, and core business outcomes.   In this role, you will provide strategic technical leadership across our Machine Learning(ML) data ecosystem — designing and evolving the data products, distributed systems, and platform capabilities necessary to support ML at scale.  This role is ideal for a highly technical, forward-thinking engineer who enjoys shaping systems end-to-end, partnering deeply with ML research & engineering teams, and elevating data quality, latency, and reliability across the ML lifecycle.
+
+What will you do?
+
+Lead the technical vision for ML-oriented data products
+
+Drive the strategy for how we produce, manage, and deliver data for feature computation, model training, online inference, feedback loops, and model evaluation across the Commerce ecosystem.
+
+Identify cross-team opportunities to improve ML data availability, consistency, lineage, observability, and reliability.
+
+Architect and build distributed data systems at scale
+
+Design and implement batch + real-time pipelines, event-driven data products, and multi-tenant distributed systems using Spark, Flink, Kafka, and other core Netflix frameworks.
+
+Shape the next generation of ML-ready datasets powering a broad spectrum of usecases across Commerce
+
+Partner deeply with Platform teams
+
+Work closely with ML Platform to ensure feature stores, training pipelines, and inference paths are supported with correct freshness, quality, and service-level guarantees.
+
+Influence and collaborate on platform primitives that improve the ML developer experience across the end-to-end lifecycle.
+
+Be the connective tissue between ML needs and data/system design
+
+Translate ML requirements (latency, accuracy, consistency, backfillability, reproducibility) into data architecture decisions.
+
+Proactively unblock ML partners by evolving data products, schema design, transport mechanisms, and low-latency interfaces.
+
+Drive reliability, observability, and operational excellence
+
+Ensure ML-critical data systems meet high SLAs through strong observability, real-time alerting, debugging pipelines, and root-cause analysis.
+
+Champion best practices for quality, reliability, testability, and automation across data products that operate 24x7.
+
+Provide technical mentorship and influence
+
+Act as an engineering force multiplier across Commerce Data Engineering and partner teams.
+
+Shape technical direction, design reviews, standards, and long-term architectural choices that raise the performance of the entire ecosystem.
+
+About you
+
+You are a Staff engineer with deep expertise in ML data systems, distributed systems, and data product design. You blend strong engineering fundamentals with pragmatic product instincts and excel at driving clarity in ambiguous, high-impact spaces.
+
+You have:
+
+You have a strong intuition about Data for ML. You understand feature computation, training/inference needs, offline/online consistency, and how data quality, latency, and drift impact model performance.  You know how to apply your analytical skills and data engineering fundamentals to achieve the desired outcomes.
+
+You are proficient in at least one major language on the JVM stack (e.g., Java, Scala) and SQL (any variant). You strive to write elegant and maintainable code, and you're comfortable with picking up new technologies.
+
+You have hands-on distributed systems experience.  You’ve built and operated large-scale, low-latency pipelines and services using technologies like Spark, Flink, Kafka, or equivalent frameworks.
+
+You are capable of designing and building well-modeled, high-quality data products and interfaces that are easy to discover, consume, and maintain.
+
+You are an excellent cross-functional communicator.  You can translate ML, product, and engineering needs into clear technical direction and influence across teams as well as leadership on forward looking investments.
+
+You have a strong ownership mindset. You care deeply about reliability, observability, operational excellence, and the long-term health of the systems you build.
+
+You are comfortable with ambiguity. You thrive in fast-moving environments, make sound judgments with incomplete context, and elevate teams with clarity and direction.
+
+You relate to and embody many aspects of Netflix's Culture. You love working independently while also collaborating and giving/receiving candid feedback.
+
+Our compensation structure consists solely of an annual salary; we do not have bonuses. You choose each year how much of your compensation you want in salary versus stock options. To determine your personal top of market compensation, we rely on market indicators and consider your specific job family, background, skills, and experience to determine your compensation in the market range. The range for this role is $230,000 - $960,000.
+
+Netflix provides comprehensive benefits including Health Plans, Mental Health support, a 401(k) Retirement Plan with employer match, Stock Option Program, Disability Programs, Health Savings and Flexible Spending Accounts, Family-forming benefits, and Life and Serious Injury Benefits. We also offer paid leave of absence programs.  Full-time hourly employees accrue 35 days annually for paid time off to be used for vacation, holidays, and sick paid time off. Full-time salaried employees are immediately entitled to flexible time off. See more detail about our Benefits here.
+
+Inclusion is a Netflix value and we strive to host a meaningful interview experience for all candidates. If you want an accommodation/adjustment for a disability or any other reason during the hiring process, please send a request to your recruiting partner.
+
+We are an equal-opportunity employer and celebrate diversity, recognizing that diversity builds stronger teams. We approach diversity and inclusion seriously and thoughtfully. We do not discriminate on the basis of race, religion, color, ancestry, national origin, caste, sex, sexual orientation, gender, gender identity or expression, age, disability, medical condition, pregnancy, genetic makeup, marital status, or military service.
+
+Job is open for no less than 7 days and will be removed when the position is filled.

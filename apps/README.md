@@ -58,21 +58,35 @@ apps/
 
 ## Quick Start
 
+### Monorepo (recommended)
+
+```bash
+# Install JS deps for the whole repo
+pnpm -w install
+
+# (Optional) Install Python deps for backend in a venv
+python -m venv .venv && source .venv/bin/activate
+cd apps/portal-python
+python -m pip install -e '.[dev]'
+```
+
+Start both (recommended):
+
+```bash
+pnpm dev
+```
+
+Or run per-package:
+
 ### 1. Start the Backend
 
 ```bash
 cd apps/portal-python
 
-# Install dependencies
-uv sync
-
-# Create .env file with your API keys
-cat > .env << EOF
-OPENROUTER_API_KEY=sk-or-v1-your-key-here
-EOF
-
-# Run the server
+# Run the server (local dev with reload)
 uv run python main.py
+# or via pnpm workspace helper
+pnpm --filter portal-python... dev
 ```
 
 Backend will be available at:
@@ -85,14 +99,120 @@ Backend will be available at:
 cd apps/portal-ui
 
 # Install dependencies
-npm install
+pnpm install
 
 # Run development server
-npm run dev
+pnpm run dev
 ```
 
 Frontend will be available at:
 - http://localhost:5173
+
+> Tip: `pnpm dev` runs `portal-python` and `portal-ui` in parallel via Turborepo; `pnpm build` will build the UI and build the backend Docker image.
+
+---
+
+## Containers & Production
+
+We provide Dockerfiles and docker-compose setups for local dev and production parity.
+
+### Build & run locally
+
+```bash
+# Build backend image
+docker build -t portal-python:local ./apps/portal-python
+
+docker run --rm --env-file apps/portal-python/.env -p 8000:8000 portal-python:local
+
+# Build UI image
+docker build -t portal-ui:local ./apps/portal-ui
+
+docker run --rm -p 5173:5173 portal-ui:local
+```
+
+### Convenience: Makefile
+
+We've added a `Makefile` at the repo root with convenient targets. Example usage:
+
+```bash
+# Install dependencies for the monorepo
+make install
+
+# Start both services locally via turbo
+make dev
+
+# Run lint and tests
+make lint
+make test
+
+# Build Docker images locally
+make docker-build
+make docker-build-ui
+
+# Start docker-compose (dev)
+make compose-up
+```
+
+---
+
+### Automated releases
+
+This repo uses **Release Drafter** to generate draft release notes automatically when changes are pushed to `main`. The configuration is stored at `.github/release-drafter.yml`. When you're ready to publish a release, create a tag (e.g., `v1.2.3`) and push it — CI already builds artifacts and uploads the wheel for tag pushes.
+
+### Docker Compose (dev)
+
+```bash
+docker compose -f docker-compose.dev.yml up --build
+```
+
+### Docker Compose (prod)
+
+```bash
+docker compose -f docker-compose.prod.yml up --build -d
+```
+
+### Publish to GHCR
+
+We push Docker images to GitHub Container Registry (`ghcr.io/<org>/ai-dev/<service>`).
+
+- To allow pushes from GitHub Actions, ensure the repository's workflow permissions allow the `packages: write` permission (already configured in CI workflow).
+- If you want to push manually, create a Personal Access Token with `write:packages` scope and run:
+
+```bash
+echo $GHCR_PAT | docker login ghcr.io -u <username> --password-stdin
+docker tag portal-python:local ghcr.io/<org>/ai-dev/portal-python:latest
+docker push ghcr.io/<org>/ai-dev/portal-python:latest
+```
+
+---
+
+## CI
+
+We run the following in CI (GitHub Actions):
+- `pnpm -w install` and `pnpm -w build` (Turbo)
+- Frontend lint & build
+- Python lint (ruff) & tests (pytest)
+- Build Python wheel and upload as an artifact
+- Build Docker images and push to GHCR on `main` (and on tags)
+
+Make sure to add any required secrets to the repository settings under `Settings` > `Secrets` > `Actions`:
+
+- `GHCR_PAT` (optional) — a Personal Access Token with `write:packages` scope if you prefer using a PAT for GHCR pushes instead of `GITHUB_TOKEN`. The CI will use `GHCR_PAT` if present, otherwise it falls back to `GITHUB_TOKEN`.
+
+Additionally, note that the CI **enforces** frontend (ESLint) and backend (ruff) linting; failing lint will fail the workflow. If you want non-blocking lint for a while, tell me and I can relax this enforcement.
+
+---
+
+## Branch protection (recommended)
+
+A branch protection workflow has been added to help you enforce best practices on `main`. It is a manual workflow (run-once via `workflow_dispatch`) that configures the following for the `main` branch:
+
+- Require status checks to pass (the `CI` workflow)
+- Enforce admin protections
+- Require at least 1 approving review for PRs
+
+To enable it, go to the Actions tab, select **Configure Branch Protection**, and click **Run workflow**. The workflow will attempt to configure protection using the `GITHUB_TOKEN`; if your org restricts that, you may need to run it with a token that has admin privileges.
+
 
 ## Frontend → Backend Communication
 

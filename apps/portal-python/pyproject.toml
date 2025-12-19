@@ -8,6 +8,7 @@ dependencies = [
     # Web Framework
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.32.0",
+    "python-multipart>=0.0.9",
     
     # GraphQL
     "strawberry-graphql[fastapi]>=0.254.0",
@@ -21,14 +22,16 @@ dependencies = [
     "pydantic>=2.10.0",
     "pydantic-settings>=2.6.0",
     
-    # Database (optional - for future)
-    "sqlalchemy>=2.0.0",
+    # Database
+    "sqlmodel>=0.0.22",
+    "sqlalchemy[asyncio]>=2.0.0",
     "aiosqlite>=0.20.0",
     
     # Utilities
     "python-dotenv>=1.0.0",
     "pyyaml>=6.0.0",
     "jinja2>=3.1.0",
+    "prometheus-client>=0.21.0",
 ]
 
 [project.optional-dependencies]
@@ -51,4 +54,15 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W"]
+
+# Explicit setuptools package discovery to avoid "flat-layout" errors during
+# editable builds on CI. This tells setuptools which packages to include.
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["ai*", "apis*"]
+
+# Define build backend explicitly for reproducible builds in CI
+[build-system]
+requires = ["setuptools>=65.5.1", "wheel"]
+build-backend = "setuptools.build_meta"
 

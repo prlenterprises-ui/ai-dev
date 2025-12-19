@@ -7,4 +7,3 @@ This module contains:
 - Integration with external submodules
 - Utilities and helpers
 """
-

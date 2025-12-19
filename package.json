@@ -1,0 +1,16 @@
+{
+  "name": "ai-dev",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "dev:ui": "pnpm --filter portal-ui... dev",
+    "dev:api": "pnpm --filter portal-python... dev",
+    "dev": "turbo run dev --parallel",
+    "build:ui": "pnpm --filter portal-ui... build",
+    "build:api": "pnpm --filter portal-python... build",
+    "build": "turbo run build"
+  },
+  "devDependencies": {
+    "turbo": "^1.12.9"
+  }
+}

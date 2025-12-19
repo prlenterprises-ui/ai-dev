@@ -1,0 +1,38 @@
+name: Configure Branch Protection
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  protect-main:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (not strictly required)
+        uses: actions/checkout@v4
+
+      - name: Configure branch protection for main
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const branch = 'main'
+            core.info(`Configuring branch protection for ${branch}`)
+
+            await github.request('PUT /repos/{owner}/{repo}/branches/{branch}/protection', {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              branch: branch,
+              required_status_checks: {
+                strict: true,
+                contexts: ['CI']
+              },
+              enforce_admins: true,
+              required_pull_request_reviews: {
+                dismiss_stale_reviews: true,
+                require_code_owner_reviews: false,
+                required_approving_review_count: 1
+              },
+              restrictions: null
+            })
