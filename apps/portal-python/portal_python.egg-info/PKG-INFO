@@ -6,13 +6,15 @@ Requires-Python: >=3.11
 Description-Content-Type: text/markdown
 Requires-Dist: fastapi>=0.115.0
 Requires-Dist: uvicorn[standard]>=0.32.0
+Requires-Dist: python-multipart>=0.0.9
 Requires-Dist: strawberry-graphql[fastapi]>=0.254.0
 Requires-Dist: openai>=1.58.0
 Requires-Dist: anthropic>=0.40.0
 Requires-Dist: httpx>=0.28.0
 Requires-Dist: pydantic>=2.10.0
 Requires-Dist: pydantic-settings>=2.6.0
-Requires-Dist: sqlalchemy>=2.0.0
+Requires-Dist: sqlmodel>=0.0.22
+Requires-Dist: sqlalchemy[asyncio]>=2.0.0
 Requires-Dist: aiosqlite>=0.20.0
 Requires-Dist: python-dotenv>=1.0.0
 Requires-Dist: pyyaml>=6.0.0

@@ -39,21 +39,21 @@ class JSONFormatter(logging.Formatter):
 
 def setup_logging() -> None:
     """Configure application logging based on settings."""
-    
+
     # Get log level from settings
     log_level = getattr(logging, settings.log_level.upper(), logging.INFO)
-    
+
     # Create logger
     logger = logging.getLogger()
     logger.setLevel(log_level)
-    
+
     # Remove existing handlers
     logger.handlers.clear()
-    
+
     # Create console handler
     handler = logging.StreamHandler(sys.stdout)
     handler.setLevel(log_level)
-    
+
     # Set formatter based on environment
     if settings.log_format.lower() == "json" or settings.is_production:
         formatter = JSONFormatter()
@@ -62,10 +62,10 @@ def setup_logging() -> None:
             "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S"
         )
-    
+
     handler.setFormatter(formatter)
     logger.addHandler(handler)
-    
+
     # Set third-party loggers to WARNING to reduce noise
     logging.getLogger("uvicorn").setLevel(logging.WARNING)
     logging.getLogger("httpx").setLevel(logging.WARNING)

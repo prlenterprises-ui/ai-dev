@@ -1,6 +1,5 @@
 """Smoke tests for the AI Dev Portal backend."""
 
-import pytest
 
 
 def test_import_council():

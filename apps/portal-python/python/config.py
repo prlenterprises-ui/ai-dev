@@ -29,7 +29,10 @@ class Settings(BaseSettings):
     # Server Config
     host: str = "0.0.0.0"
     port: int = 8000
-    environment: str = Field(default="development", description="Environment: development, staging, production")
+    environment: str = Field(
+        default="development",
+        description="Environment: development, staging, production",
+    )
     debug: bool = True
     reload: bool = True
 
@@ -51,7 +54,10 @@ class Settings(BaseSettings):
     log_format: str = Field(default="json", description="Log format (json or text)")
 
     # LLM Council Config
-    council_models: str = "openai/gpt-4o,anthropic/claude-3-5-sonnet,anthropic/claude-3-5-haiku,google/gemini-2.0-flash-exp"
+    council_models: str = (
+        "openai/gpt-4o,anthropic/claude-3-5-sonnet,"
+        "anthropic/claude-3-5-haiku,google/gemini-2.0-flash-exp"
+    )
     chairman_model: str = "google/gemini-2.0-flash-thinking-exp"
     council_timeout: int = Field(default=120, description="Council timeout in seconds")
     council_max_retries: int = Field(default=3, description="Council max retries")
@@ -98,3 +104,6 @@ def get_settings() -> Settings:
     """Get cached settings instance."""
     return Settings()
 
+
+# Create global settings instance
+settings = get_settings()

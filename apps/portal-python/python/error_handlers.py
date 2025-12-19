@@ -9,6 +9,7 @@ from typing import Any, Dict
 
 from fastapi import HTTPException, Request, status
 from fastapi.responses import JSONResponse
+
 from python.logging_config import logger
 
 
@@ -66,7 +67,7 @@ async def api_error_handler(request: Request, exc: APIError) -> JSONResponse:
             "details": exc.details,
         }
     )
-    
+
     return JSONResponse(
         status_code=exc.status_code,
         content={
@@ -89,7 +90,7 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
             "status_code": exc.status_code,
         }
     )
-    
+
     return JSONResponse(
         status_code=exc.status_code,
         content={
@@ -113,7 +114,7 @@ async def general_exception_handler(request: Request, exc: Exception) -> JSONRes
             "traceback": tb,
         }
     )
-    
+
     # Return generic error to client (don't leak internal details)
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

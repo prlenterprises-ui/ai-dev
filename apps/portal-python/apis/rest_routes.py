@@ -100,24 +100,23 @@ async def upload_resume(file: UploadFile = File(...)):
     size = len(content)
 
     # Save to storage
-    import os
     from pathlib import Path
-    
+
     storage_dir = Path("/tmp/uploads")
     storage_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Generate safe filename
     safe_filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{file.filename}"
     file_path = storage_dir / safe_filename
-    
+
     with open(file_path, "wb") as f:
         f.write(content)
-    
+
     # Basic text extraction
-    text_preview = ""
-    if file.content_type == "text/plain":
-        text_preview = content.decode('utf-8', errors='ignore')[:500]
-    
+    # text_preview = ""
+    # if file.content_type == "text/plain":
+    #     text_preview = content.decode('utf-8', errors='ignore')[:500]
+
     return FileUploadResponse(
         filename=file.filename or "unknown",
         size=size,
@@ -130,7 +129,7 @@ async def upload_resume(file: UploadFile = File(...)):
 async def upload_job_description(file: UploadFile = File(...)):
     """Upload a job description file for parsing."""
     content = await file.read()
-    
+
     # Extract text based on file type
     text_content = ""
     if file.content_type == "text/plain":
@@ -139,13 +138,13 @@ async def upload_job_description(file: UploadFile = File(...)):
         # For other formats, basic extraction
         try:
             text_content = content.decode('utf-8', errors='ignore')
-        except:
+        except (UnicodeDecodeError, AttributeError):
             text_content = str(content)
-    
+
     # Basic parsing - extract title from first lines
     lines = [line.strip() for line in text_content.split('\n') if line.strip()]
     title = lines[0] if lines else "Unknown Position"
-    
+
     # Extract company name (simple heuristic)
     company = "Unknown Company"
     for line in lines[:5]:
@@ -161,7 +160,6 @@ async def upload_job_description(file: UploadFile = File(...)):
             "title": title[:100],
             "company": company[:100],
             "full_text": text_content[:1000],  # First 1000 chars
-            "company": "Extracted company name",
             "requirements": ["requirement 1", "requirement 2"],
         },
     }

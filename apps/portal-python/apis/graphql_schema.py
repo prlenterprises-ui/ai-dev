@@ -237,26 +237,31 @@ class Mutation:
         2. Anonymous peer review and ranking
         3. Chairman synthesis of final answer
         """
-        from ..ai.council import LLMCouncil
         import os
-        
+
+        from ..ai.council import LLMCouncil
+
         # Get API key from environment
         api_key = os.getenv("OPENROUTER_API_KEY")
         if not api_key:
             # Return error as a deliberation result
+            error_msg = (
+                "Error: OPENROUTER_API_KEY not configured. "
+                "Please set the API key to use the LLM Council."
+            )
             return CouncilDeliberation(
                 query=input.query,
                 individual_responses=[],
                 rankings=[],
-                final_answer="Error: OPENROUTER_API_KEY not configured. Please set the API key to use the LLM Council.",
+                final_answer=error_msg,
                 chairman_model="none",
             )
-        
+
         # Run council deliberation
         council = LLMCouncil(api_key=api_key)
         try:
             result = await council.deliberate(input.query)
-            
+
             # Convert to GraphQL types
             responses = [
                 LLMResponse(
@@ -267,9 +272,9 @@ class Mutation:
                 )
                 for model, resp in result.stage1_responses.items()
             ]
-            
+
             rankings = [model for model, _ in result.aggregate_rankings]
-            
+
             return CouncilDeliberation(
                 query=result.query,
                 individual_responses=responses,
@@ -297,49 +302,49 @@ class Mutation:
         # Basic keyword extraction and matching
         resume_lower = input.resume_text.lower()
         job_lower = input.job_description.lower()
-        
+
         # Extract keywords from job description (simple approach)
         import re
         job_keywords = set(re.findall(r'\b[a-z]{3,}\b', job_lower))
         resume_keywords = set(re.findall(r'\b[a-z]{3,}\b', resume_lower))
-        
+
         # Common technical keywords to prioritize
-        tech_keywords = {'python', 'java', 'javascript', 'typescript', 'golang', 'react', 'vue', 
-                        'kubernetes', 'docker', 'aws', 'azure', 'gcp', 'sql', 'nosql', 
+        tech_keywords = {'python', 'java', 'javascript', 'typescript', 'golang', 'react', 'vue',
+                        'kubernetes', 'docker', 'aws', 'azure', 'gcp', 'sql', 'nosql',
                         'distributed', 'microservices', 'api', 'rest', 'graphql', 'kafka',
                         'redis', 'postgresql', 'mongodb', 'elasticsearch'}
-        
+
         # Calculate keyword match
         tech_in_job = job_keywords & tech_keywords
         tech_in_resume = resume_keywords & tech_keywords
         tech_match = len(tech_in_job & tech_in_resume)
         tech_total = len(tech_in_job) if tech_in_job else 1
-        
+
         keyword_score = (tech_match / tech_total) * 100
-        
+
         # ATS compatibility checks
         ats_score = 70.0
         suggestions = []
-        
+
         if input.resume_text.count('\n') < 20:
             ats_score -= 10
             suggestions.append("Add more content - resume seems too short")
-        
+
         if len(re.findall(r'\d+%|\d+x|\$\d+', input.resume_text)) < 3:
             ats_score -= 5
             suggestions.append("Add more quantifiable achievements with numbers")
-        
+
         # Check for missing tech keywords
         missing_tech = tech_in_job - tech_in_resume
         if missing_tech:
             suggestions.append(f"Consider adding keywords: {', '.join(list(missing_tech)[:5])}")
-        
+
         # Overall score (weighted average)
         overall_score = (keyword_score * 0.6) + (ats_score * 0.4)
-        
+
         if not suggestions:
             suggestions.append("Resume looks well-matched to the job description")
-        
+
         return ResumeScore(
             overall_score=round(overall_score, 1),
             keyword_match=round(keyword_score, 1),
@@ -359,19 +364,15 @@ class Mutation:
         4. Resume and cover letter generation
         5. PDF compilation
         """
-        # Generate application ID
-        import uuid
-        app_id = f"app-{uuid.uuid4().hex[:8]}"
-        
         # Create application record
         # In production, this would save to database
-        application = JobApplication(
-            id=app_id,
-            job_title=input.job_title,
-            company=input.company,
-            status="pending",
-            created_at=datetime.now(),
-        )
+        # JobApplication(
+        #     id=app_id,
+        #     job_title=input.job_title,
+        #     company=input.company,
+        #     status="pending",
+        #     created_at=datetime.now(),
+        # )
 
 
 # =============================================================================
