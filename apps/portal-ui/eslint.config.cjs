@@ -30,6 +30,8 @@ module.exports = [
     rules: {
       ...react.configs.recommended.rules,
       ...reactHooks.configs.recommended.rules,
+      'react/react-in-jsx-scope': 'off', // React 17+ automatic JSX runtime
+      'react/prop-types': 'off', // Using TypeScript or modern patterns
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true },
