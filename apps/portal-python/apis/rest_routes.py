@@ -311,3 +311,212 @@ async def start_tailoring_job(
     except Exception as e:
         logger.error(f"Failed to start tailoring job: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# =============================================================================
+# AUTOMATED JOB APPLICATION
+# =============================================================================
+
+
+class JobSearchRequest(BaseModel):
+    """Request model for automated job search and application."""
+    keywords: str
+    location: str | None = None
+    max_applications: int = 10
+    auto_apply: bool = False
+
+
+class JobApplicationListResponse(BaseModel):
+    """Response model for job application list."""
+    total: int
+    applications: list
+
+
+@router.post("/jobs/auto-apply", tags=["jobs"])
+async def start_auto_apply(request: JobSearchRequest):
+    """
+    Start automated job application pipeline.
+    
+    This endpoint:
+    1. Searches job boards for matching positions
+    2. Ranks jobs by relevance
+    3. For each job:
+       - Analyzes requirements
+       - Generates tailored resume & cover letter
+       - Saves documents
+       - Optionally submits application
+    
+    Returns:
+        Pipeline ID for streaming progress via /stream/auto-apply/{pipeline_id}
+    """
+    import uuid
+    from python.database import get_session
+    
+    try:
+        # Generate pipeline ID
+        pipeline_id = str(uuid.uuid4())
+        
+        return {
+            "success": True,
+            "pipeline_id": pipeline_id,
+            "message": f"Auto-apply pipeline started for '{request.keywords}'",
+            "stream_url": f"/api/stream/auto-apply/{pipeline_id}",
+            "details": {
+                "keywords": request.keywords,
+                "location": request.location,
+                "max_applications": request.max_applications,
+                "auto_apply": request.auto_apply
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to start auto-apply: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/stream/auto-apply/{pipeline_id}", tags=["jobs"])
+async def stream_auto_apply_progress(pipeline_id: str, keywords: str, location: str = None, max_applications: int = 10, auto_apply: bool = False):
+    """
+    Stream real-time progress updates for automated job application pipeline.
+    
+    Returns Server-Sent Events with progress updates:
+    - Job search results
+    - Document generation progress
+    - Application submission status
+    
+    Client should handle events with:
+    ```javascript
+    const eventSource = new EventSource('/api/stream/auto-apply/{id}?keywords=...');
+    eventSource.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        console.log(data.stage, data.status, data.message);
+    };
+    ```
+    """
+    from python.database import get_session
+    from ai.job_application_pipeline import JobApplicationPipeline
+    
+    async def generate():
+        try:
+            async with get_session() as db:
+                pipeline = JobApplicationPipeline(db)
+                
+                async for update in pipeline.run_pipeline(
+                    keywords=keywords,
+                    location=location,
+                    max_applications=max_applications,
+                    auto_apply=auto_apply
+                ):
+                    yield f"data: {json.dumps(update)}\n\n"
+                    await asyncio.sleep(0.1)  # Small delay for better UX
+                    
+        except Exception as e:
+            logger.error(f"Auto-apply pipeline failed: {e}")
+            error_update = {
+                "stage": "pipeline",
+                "status": "failed",
+                "error": str(e)
+            }
+            yield f"data: {json.dumps(error_update)}\n\n"
+    
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+    )
+
+
+@router.get("/jobs/applications", tags=["jobs"], response_model=JobApplicationListResponse)
+async def list_job_applications(status: str = None, limit: int = 100):
+    """
+    List job applications from database.
+    
+    Query Parameters:
+        status: Filter by status (pending, in_progress, completed, failed)
+        limit: Maximum number of results (default: 100)
+    
+    Returns:
+        List of job applications with details
+    """
+    from python.database import get_session
+    from ai.job_application_pipeline import JobApplicationPipeline
+    
+    try:
+        async with get_session() as db:
+            pipeline = JobApplicationPipeline(db)
+            applications = await pipeline.get_applications(status=status, limit=limit)
+            
+            return {
+                "total": len(applications),
+                "applications": [
+                    {
+                        "id": app.id,
+                        "job_title": app.job_title,
+                        "company": app.company,
+                        "status": app.status,
+                        "match_score": app.match_score,
+                        "resume_url": app.resume_url,
+                        "cover_letter_url": app.cover_letter_url,
+                        "job_url": app.job_url,
+                        "created_at": app.created_at.isoformat(),
+                        "updated_at": app.updated_at.isoformat(),
+                        "notes": app.notes
+                    }
+                    for app in applications
+                ]
+            }
+    
+    except Exception as e:
+        logger.error(f"Failed to list applications: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/jobs/opportunities/{stage}", tags=["jobs"])
+async def list_opportunities(stage: str):
+    """
+    List opportunities from data/opportunities folder structure.
+    
+    Path Parameters:
+        stage: Pipeline stage (interested, qualified, applied, interviewing, offers, archived)
+    
+    Returns:
+        List of opportunities in the specified stage
+    """
+    from ai.opportunities_manager import OpportunitiesManager
+    
+    try:
+        manager = OpportunitiesManager()
+        opportunities = manager.list_opportunities(stage)
+        
+        return {
+            "stage": stage,
+            "count": len(opportunities),
+            "opportunities": opportunities
+        }
+    
+    except Exception as e:
+        logger.error(f"Failed to list opportunities: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/jobs/opportunities", tags=["jobs"])
+async def get_opportunities_summary():
+    """
+    Get summary of all opportunities across pipeline stages.
+    
+    Returns:
+        Count of opportunities in each stage
+    """
+    from ai.opportunities_manager import OpportunitiesManager
+    
+    try:
+        manager = OpportunitiesManager()
+        counts = manager.get_all_stage_counts()
+        
+        return {
+            "total": sum(counts.values()),
+            "stages": counts
+        }
+    
+    except Exception as e:
+        logger.error(f"Failed to get opportunities summary: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

@@ -1,11 +1,12 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { Home, Users, FileText, Target, Sparkles, Bird } from 'lucide-react'
+import { Home, Users, FileText, Target, Sparkles, Bird, Zap } from 'lucide-react'
 
 const navItems = [
   { path: '/', label: 'Home', icon: Home },
   { path: '/council', label: 'LLM Council', icon: Users },
   { path: '/jobbernaut', label: 'Jobbernaut', icon: FileText },
   { path: '/matcher', label: 'Resume Matcher', icon: Target },
+  { path: '/auto-apply', label: 'Auto Apply', icon: Zap },
   { path: '/resume-lm', label: 'ResumeLM', icon: Sparkles, disabled: true },
   { path: '/aihawk', label: 'AIHawk', icon: Bird, disabled: true },
 ]
