@@ -34,7 +34,7 @@ const client = new ApolloClient({
       Query: {
         fields: {
           applications: {
-            merge(existing = [], incoming) {
+            merge(_existing, incoming) {
               return incoming
             },
           },
