@@ -32,6 +32,7 @@ module.exports = [
       ...reactHooks.configs.recommended.rules,
       'react/react-in-jsx-scope': 'off', // React 17+ automatic JSX runtime
       'react/prop-types': 'off', // Using TypeScript or modern patterns
+      'react/no-unescaped-entities': 'off', // Allow apostrophes in JSX text
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true },
