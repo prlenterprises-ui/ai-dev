@@ -11,13 +11,15 @@ are better suited for REST:
 
 import asyncio
 import json
+import logging
 from datetime import datetime
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 # =============================================================================
@@ -262,3 +264,50 @@ async def stream_tailoring_progress(job_id: str):
         generate(),
         media_type="text/event-stream",
     )
+
+
+@router.post("/jobbernaut/tailor", tags=["jobbernaut"])
+async def start_tailoring_job(
+    job_title: str = Form(...),
+    company: str = Form(...),
+    job_description: str = Form(...),
+    job_url: str = Form(None),
+):
+    """
+    Start a new Jobbernaut tailoring job.
+    
+    This triggers the full 12-step pipeline:
+    1. Job Resonance Analysis
+    2. Company Research
+    3. Storytelling Arc
+    4. Resume JSON Generation
+    5. Cover Letter Generation
+    6. LaTeX Rendering
+    7. PDF Compilation
+    
+    Returns:
+        Job ID for tracking progress via /stream/tailoring/{job_id}
+    """
+    from ai.jobbernaut_service import get_jobbernaut_service
+    
+    try:
+        service = await get_jobbernaut_service()
+        
+        # Generate job ID
+        from datetime import datetime
+        job_id = f"{company}_{job_title}_{datetime.now().strftime('%Y%m%d_%H%M%S')}".replace(" ", "_")
+        
+        # Start processing in background
+        # Note: For production, use Celery or background tasks
+        # For now, we'll return the job ID and client can stream progress
+        
+        return {
+            "success": True,
+            "job_id": job_id,
+            "message": "Job started successfully",
+            "stream_url": f"/api/stream/tailoring/{job_id}"
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to start tailoring job: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

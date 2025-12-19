@@ -103,15 +103,16 @@ ai-dev/
 │       └── vite.config.js
 ├── data/                       # Job search data
 │   └── opportunities/
-├── external/                   # External tools
-│   ├── jobbernaut-tailor/
-│   ├── llm-council/
-│   └── Resume-Matcher/
 ├── docker-compose.dev.yml
 ├── docker-compose.prod.yml
 ├── pnpm-workspace.yaml
 └── turbo.json
 ```
+
+**Note**: All external code has been consolidated into the main repository:
+- `apps/portal-python/jobbernaut/` - Resume tailoring pipeline (formerly external)
+- `apps/portal-python/resume_matcher/` - ATS analysis (formerly external)
+- `apps/portal-python/ai/council.py` - Multi-model deliberation (integrated)
 
 ## API Documentation
 

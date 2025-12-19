@@ -1,0 +1,56 @@
+# Node
+node_modules
+.turbo
+dist
+build
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+*.egg-info/
+.eggs/
+*.egg
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+*.log
+
+# IDEs
+.vscode/ *.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+!.env.example
+!.env.production
+
+# Uploads and outputs
+apps/portal-python/outputs/
+apps/portal-python/uploads/
+apps/portal-python/jobbernaut/outputs/
+apps/portal-python/jobbernaut/profile/
+apps/portal-python/jobbernaut/data/
+/tmp/
+
+# External standalone apps (keep for reference)
+# external/ folder contains standalone applications, not submodules
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
