@@ -65,7 +65,7 @@ jobs:
       - name: Install Python deps
         working-directory: ./apps/portal-python
         run: |
-          python -m pip install --upgrade pip setuptools build
+          python -m pip install --upgrade pip setuptools build wheel
           python -m pip install -e '.[dev]'
 
       - name: Run ruff (lint)
