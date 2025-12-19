@@ -128,9 +128,7 @@ class TestCORS:
 
     def test_cors_headers(self, client):
         """Test that CORS headers are present."""
-        response = client.get(
-            "/api/health", headers={"Origin": "http://localhost:5173"}
-        )
+        response = client.get("/api/health", headers={"Origin": "http://localhost:5173"})
         # CORS headers should be present on actual requests
         assert response.status_code == 200
         assert "access-control-allow-origin" in response.headers
