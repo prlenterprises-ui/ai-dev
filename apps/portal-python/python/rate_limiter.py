@@ -80,8 +80,7 @@ class RateLimiter(BaseHTTPMiddleware):
         for ip in list(self.request_history.keys()):
             # Filter out old entries
             self.request_history[ip] = [
-                (ts, count) for ts, count in self.request_history[ip]
-                if ts > cutoff_time
+                (ts, count) for ts, count in self.request_history[ip] if ts > cutoff_time
             ]
 
             # Remove IP if no recent requests
@@ -105,26 +104,17 @@ class RateLimiter(BaseHTTPMiddleware):
         history.append((now, 1))
 
         # Check burst limit (within 1 second)
-        burst_count = sum(
-            count for ts, count in history
-            if now - ts <= 1
-        )
+        burst_count = sum(count for ts, count in history if now - ts <= 1)
         if burst_count > self.burst_size:
             return False, "Too many requests in rapid succession", 1
 
         # Check per-minute limit
-        minute_count = sum(
-            count for ts, count in history
-            if now - ts <= 60
-        )
+        minute_count = sum(count for ts, count in history if now - ts <= 60)
         if minute_count > self.requests_per_minute:
             return False, "Rate limit exceeded (per minute)", 60
 
         # Check per-hour limit
-        hour_count = sum(
-            count for ts, count in history
-            if now - ts <= 3600
-        )
+        hour_count = sum(count for ts, count in history if now - ts <= 3600)
         if hour_count > self.requests_per_hour:
             return False, "Rate limit exceeded (per hour)", 3600
 
@@ -133,8 +123,10 @@ class RateLimiter(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         """Process request with rate limiting."""
         # Skip rate limiting for health checks and test client
-        if (request.url.path in ["/health", "/", "/docs", "/redoc", "/openapi.json", "/metrics"] or
-            self._get_client_ip(request) == "testclient"):
+        if (
+            request.url.path in ["/health", "/", "/docs", "/redoc", "/openapi.json", "/metrics"]
+            or self._get_client_ip(request) == "testclient"
+        ):
             return await call_next(request)
 
         # Periodic cleanup
@@ -167,8 +159,7 @@ class RateLimiter(BaseHTTPMiddleware):
 
         # Add rate limit headers to response
         minute_count = sum(
-            count for ts, count in self.request_history[client_ip]
-            if time.time() - ts <= 60
+            count for ts, count in self.request_history[client_ip] if time.time() - ts <= 60
         )
         remaining = max(0, self.requests_per_minute - minute_count)
 

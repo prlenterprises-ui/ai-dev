@@ -32,19 +32,25 @@ from python.rate_limiter import RateLimiter
 async def lifespan(app: FastAPI):
     """Application lifespan manager - runs on startup and shutdown."""
     # Startup
-    logger.info("Starting AI Dev Portal API", extra={
-        "environment": settings.environment,
-        "port": settings.port,
-    })
+    logger.info(
+        "Starting AI Dev Portal API",
+        extra={
+            "environment": settings.environment,
+            "port": settings.port,
+        },
+    )
 
     # Create necessary directories
     Path(settings.upload_dir).mkdir(parents=True, exist_ok=True)
     Path(settings.output_dir).mkdir(parents=True, exist_ok=True)
 
-    logger.info("Directories initialized", extra={
-        "upload_dir": settings.upload_dir,
-        "output_dir": settings.output_dir,
-    })
+    logger.info(
+        "Directories initialized",
+        extra={
+            "upload_dir": settings.upload_dir,
+            "output_dir": settings.output_dir,
+        },
+    )
 
     # Initialize database
     try:
@@ -119,9 +125,7 @@ app.add_middleware(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=(
-        settings.cors_origins_list
-        if not settings.is_production
-        else settings.cors_origins_list
+        settings.cors_origins_list if not settings.is_production else settings.cors_origins_list
     ),
     allow_credentials=True,
     allow_methods=["*"],
@@ -192,4 +196,3 @@ if __name__ == "__main__":
         reload=settings.reload and settings.is_development,
         log_level=settings.log_level.lower(),
     )
-

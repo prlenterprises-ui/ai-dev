@@ -133,22 +133,22 @@ async def upload_job_description(file: UploadFile = File(...)):
     # Extract text based on file type
     text_content = ""
     if file.content_type == "text/plain":
-        text_content = content.decode('utf-8')
+        text_content = content.decode("utf-8")
     else:
         # For other formats, basic extraction
         try:
-            text_content = content.decode('utf-8', errors='ignore')
+            text_content = content.decode("utf-8", errors="ignore")
         except (UnicodeDecodeError, AttributeError):
             text_content = str(content)
 
     # Basic parsing - extract title from first lines
-    lines = [line.strip() for line in text_content.split('\n') if line.strip()]
+    lines = [line.strip() for line in text_content.split("\n") if line.strip()]
     title = lines[0] if lines else "Unknown Position"
 
     # Extract company name (simple heuristic)
     company = "Unknown Company"
     for line in lines[:5]:
-        if any(keyword in line.lower() for keyword in ['company:', 'at ', 'join ']):
+        if any(keyword in line.lower() for keyword in ["company:", "at ", "join "]):
             company = line
             break
 
@@ -262,4 +262,3 @@ async def stream_tailoring_progress(job_id: str):
         generate(),
         media_type="text/event-stream",
     )
-

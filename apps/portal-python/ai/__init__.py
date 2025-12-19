@@ -7,4 +7,3 @@ This module handles:
 - Resume analysis with local models (Ollama)
 - Prompt templates and management
 """
-

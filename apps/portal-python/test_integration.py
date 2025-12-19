@@ -36,9 +36,7 @@ class TestFileUpload:
 
     def test_upload_resume_txt(self, client):
         """Test uploading a text resume."""
-        files = {
-            "file": ("resume.txt", b"Sample resume content", "text/plain")
-        }
+        files = {"file": ("resume.txt", b"Sample resume content", "text/plain")}
         response = client.post("/api/upload/resume", files=files)
         assert response.status_code == 200
         data = response.json()
@@ -48,17 +46,13 @@ class TestFileUpload:
 
     def test_upload_invalid_file_type(self, client):
         """Test uploading an invalid file type."""
-        files = {
-            "file": ("file.exe", b"Invalid content", "application/x-msdownload")
-        }
+        files = {"file": ("file.exe", b"Invalid content", "application/x-msdownload")}
         response = client.post("/api/upload/resume", files=files)
         assert response.status_code == 400
 
     def test_upload_job_description(self, client):
         """Test uploading a job description."""
-        files = {
-            "file": ("job.txt", b"Senior Engineer\nTechCorp\nJob details...", "text/plain")
-        }
+        files = {"file": ("job.txt", b"Senior Engineer\nTechCorp\nJob details...", "text/plain")}
         response = client.post("/api/upload/job-description", files=files)
         assert response.status_code == 200
         data = response.json()
@@ -134,12 +128,12 @@ class TestCORS:
 
     def test_cors_headers(self, client):
         """Test that CORS headers are present."""
-        response = client.options(
-            "/api/health",
-            headers={"Origin": "http://localhost:5173"}
+        response = client.get(
+            "/api/health", headers={"Origin": "http://localhost:5173"}
         )
-        # CORS headers should be present
-        assert response.status_code in [200, 204]
+        # CORS headers should be present on actual requests
+        assert response.status_code == 200
+        assert "access-control-allow-origin" in response.headers
 
 
 class TestErrorHandling:

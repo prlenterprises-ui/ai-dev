@@ -21,84 +21,62 @@ logger = logging.getLogger(__name__)
 
 # Request metrics
 http_requests_total = Counter(
-    "http_requests_total",
-    "Total number of HTTP requests",
-    ["method", "endpoint", "status"]
+    "http_requests_total", "Total number of HTTP requests", ["method", "endpoint", "status"]
 )
 
 http_request_duration_seconds = Histogram(
-    "http_request_duration_seconds",
-    "HTTP request latency in seconds",
-    ["method", "endpoint"]
+    "http_request_duration_seconds", "HTTP request latency in seconds", ["method", "endpoint"]
 )
 
 http_requests_in_progress = Gauge(
-    "http_requests_in_progress",
-    "Number of HTTP requests in progress",
-    ["method", "endpoint"]
+    "http_requests_in_progress", "Number of HTTP requests in progress", ["method", "endpoint"]
 )
 
 # LLM metrics
 llm_requests_total = Counter(
-    "llm_requests_total",
-    "Total number of LLM API requests",
-    ["provider", "model", "status"]
+    "llm_requests_total", "Total number of LLM API requests", ["provider", "model", "status"]
 )
 
 llm_request_duration_seconds = Histogram(
-    "llm_request_duration_seconds",
-    "LLM API request latency in seconds",
-    ["provider", "model"]
+    "llm_request_duration_seconds", "LLM API request latency in seconds", ["provider", "model"]
 )
 
 llm_tokens_used = Counter(
     "llm_tokens_used_total",
     "Total number of tokens used by LLMs",
-    ["provider", "model", "type"]  # type: input/output
+    ["provider", "model", "type"],  # type: input/output
 )
 
 # Database metrics
 db_queries_total = Counter(
-    "db_queries_total",
-    "Total number of database queries",
-    ["operation", "table", "status"]
+    "db_queries_total", "Total number of database queries", ["operation", "table", "status"]
 )
 
 db_query_duration_seconds = Histogram(
-    "db_query_duration_seconds",
-    "Database query latency in seconds",
-    ["operation", "table"]
+    "db_query_duration_seconds", "Database query latency in seconds", ["operation", "table"]
 )
 
-db_connections_active = Gauge(
-    "db_connections_active",
-    "Number of active database connections"
-)
+db_connections_active = Gauge("db_connections_active", "Number of active database connections")
 
 # File upload metrics
 file_uploads_total = Counter(
-    "file_uploads_total",
-    "Total number of file uploads",
-    ["file_type", "status"]
+    "file_uploads_total", "Total number of file uploads", ["file_type", "status"]
 )
 
 file_upload_size_bytes = Histogram(
-    "file_upload_size_bytes",
-    "Size of uploaded files in bytes",
-    ["file_type"]
+    "file_upload_size_bytes", "Size of uploaded files in bytes", ["file_type"]
 )
 
 # Rate limiting metrics
 rate_limit_exceeded_total = Counter(
-    "rate_limit_exceeded_total",
-    "Number of requests blocked by rate limiting",
-    ["ip_address"]
+    "rate_limit_exceeded_total", "Number of requests blocked by rate limiting", ["ip_address"]
 )
 
 
 # =============================================================================
 # Middleware for Request Metrics
 # =============================================================================
+
 
 class MetricsMiddleware(BaseHTTPMiddleware):
     """Middleware to collect HTTP request metrics."""
@@ -124,30 +102,16 @@ class MetricsMiddleware(BaseHTTPMiddleware):
 
             # Record successful request
             duration = time.time() - start_time
-            http_requests_total.labels(
-                method=method,
-                endpoint=endpoint,
-                status=status
-            ).inc()
-            http_request_duration_seconds.labels(
-                method=method,
-                endpoint=endpoint
-            ).observe(duration)
+            http_requests_total.labels(method=method, endpoint=endpoint, status=status).inc()
+            http_request_duration_seconds.labels(method=method, endpoint=endpoint).observe(duration)
 
             return response
 
         except Exception:
             # Record failed request
             duration = time.time() - start_time
-            http_requests_total.labels(
-                method=method,
-                endpoint=endpoint,
-                status=500
-            ).inc()
-            http_request_duration_seconds.labels(
-                method=method,
-                endpoint=endpoint
-            ).observe(duration)
+            http_requests_total.labels(method=method, endpoint=endpoint, status=500).inc()
+            http_request_duration_seconds.labels(method=method, endpoint=endpoint).observe(duration)
             raise
 
         finally:
@@ -159,8 +123,10 @@ class MetricsMiddleware(BaseHTTPMiddleware):
 # Decorators for Function Metrics
 # =============================================================================
 
+
 def track_llm_request(provider: str, model: str):
     """Decorator to track LLM API requests."""
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def wrapper(*args, **kwargs) -> Any:
@@ -173,18 +139,14 @@ def track_llm_request(provider: str, model: str):
                 # Track tokens if available in result
                 if isinstance(result, dict):
                     if "input_tokens" in result:
-                        llm_tokens_used.labels(
-                            provider=provider,
-                            model=model,
-                            type="input"
-                        ).inc(result["input_tokens"])
+                        llm_tokens_used.labels(provider=provider, model=model, type="input").inc(
+                            result["input_tokens"]
+                        )
 
                     if "output_tokens" in result:
-                        llm_tokens_used.labels(
-                            provider=provider,
-                            model=model,
-                            type="output"
-                        ).inc(result["output_tokens"])
+                        llm_tokens_used.labels(provider=provider, model=model, type="output").inc(
+                            result["output_tokens"]
+                        )
 
                 return result
 
@@ -194,22 +156,19 @@ def track_llm_request(provider: str, model: str):
 
             finally:
                 duration = time.time() - start_time
-                llm_requests_total.labels(
-                    provider=provider,
-                    model=model,
-                    status=status
-                ).inc()
-                llm_request_duration_seconds.labels(
-                    provider=provider,
-                    model=model
-                ).observe(duration)
+                llm_requests_total.labels(provider=provider, model=model, status=status).inc()
+                llm_request_duration_seconds.labels(provider=provider, model=model).observe(
+                    duration
+                )
 
         return wrapper
+
     return decorator
 
 
 def track_db_query(operation: str, table: str):
     """Decorator to track database queries."""
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def wrapper(*args, **kwargs) -> Any:
@@ -226,23 +185,18 @@ def track_db_query(operation: str, table: str):
 
             finally:
                 duration = time.time() - start_time
-                db_queries_total.labels(
-                    operation=operation,
-                    table=table,
-                    status=status
-                ).inc()
-                db_query_duration_seconds.labels(
-                    operation=operation,
-                    table=table
-                ).observe(duration)
+                db_queries_total.labels(operation=operation, table=table, status=status).inc()
+                db_query_duration_seconds.labels(operation=operation, table=table).observe(duration)
 
         return wrapper
+
     return decorator
 
 
 # =============================================================================
 # Metrics Endpoint
 # =============================================================================
+
 
 def get_metrics() -> Response:
     """Return Prometheus metrics in text format."""
@@ -256,6 +210,7 @@ def get_metrics() -> Response:
 # =============================================================================
 # Health Check with Metrics
 # =============================================================================
+
 
 async def get_health_with_metrics() -> dict:
     """
@@ -280,9 +235,7 @@ async def get_health_with_metrics() -> dict:
         "timestamp": time.time(),
         "metrics": {
             "requests_total": (
-                http_requests_total._value.get()
-                if hasattr(http_requests_total, "_value")
-                else 0
+                http_requests_total._value.get() if hasattr(http_requests_total, "_value") else 0
             ),
             "requests_in_progress": (
                 http_requests_in_progress._value.get()
@@ -294,13 +247,14 @@ async def get_health_with_metrics() -> dict:
                 if hasattr(db_connections_active, "_value")
                 else 0
             ),
-        }
+        },
     }
 
 
 # =============================================================================
 # Logging Utilities
 # =============================================================================
+
 
 class StructuredLogger:
     """Structured logging helper for consistent log formatting."""
@@ -309,13 +263,7 @@ class StructuredLogger:
         self.logger = logging.getLogger(name)
 
     def log_request(
-        self,
-        method: str,
-        path: str,
-        status: int,
-        duration_ms: float,
-        user_id: str = None,
-        **extra
+        self, method: str, path: str, status: int, duration_ms: float, user_id: str = None, **extra
     ):
         """Log HTTP request with structured data."""
         self.logger.info(
@@ -326,8 +274,8 @@ class StructuredLogger:
                 "status": status,
                 "duration_ms": duration_ms,
                 "user_id": user_id,
-                **extra
-            }
+                **extra,
+            },
         )
 
     def log_llm_call(
@@ -337,7 +285,7 @@ class StructuredLogger:
         duration_ms: float,
         tokens_used: int = None,
         status: str = "success",
-        **extra
+        **extra,
     ):
         """Log LLM API call with structured data."""
         self.logger.info(
@@ -348,17 +296,12 @@ class StructuredLogger:
                 "duration_ms": duration_ms,
                 "tokens_used": tokens_used,
                 "status": status,
-                **extra
-            }
+                **extra,
+            },
         )
 
     def log_db_query(
-        self,
-        operation: str,
-        table: str,
-        duration_ms: float,
-        rows_affected: int = None,
-        **extra
+        self, operation: str, table: str, duration_ms: float, rows_affected: int = None, **extra
     ):
         """Log database query with structured data."""
         self.logger.info(
@@ -368,16 +311,11 @@ class StructuredLogger:
                 "table": table,
                 "duration_ms": duration_ms,
                 "rows_affected": rows_affected,
-                **extra
-            }
+                **extra,
+            },
         )
 
-    def log_error(
-        self,
-        error: Exception,
-        context: dict = None,
-        **extra
-    ):
+    def log_error(self, error: Exception, context: dict = None, **extra):
         """Log error with structured context."""
         self.logger.error(
             f"Error: {str(error)}",
@@ -385,7 +323,7 @@ class StructuredLogger:
                 "error_type": type(error).__name__,
                 "error_message": str(error),
                 "context": context or {},
-                **extra
+                **extra,
             },
-            exc_info=True
+            exc_info=True,
         )

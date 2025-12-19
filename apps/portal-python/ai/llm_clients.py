@@ -257,4 +257,3 @@ def create_client(provider: str, model: Optional[str] = None, **kwargs) -> BaseL
 
     client_class, default_model = providers[provider]
     return client_class(model=model or default_model, **kwargs)
-

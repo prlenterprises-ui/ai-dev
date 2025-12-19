@@ -1,7 +1,6 @@
 """Smoke tests for the AI Dev Portal backend."""
 
 
-
 def test_import_council():
     """Test that the council module can be imported."""
     from ai.council import LLMCouncil

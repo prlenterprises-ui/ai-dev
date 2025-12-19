@@ -105,9 +105,7 @@ engine = create_async_engine(
 )
 
 # Create session factory
-async_session_maker = sessionmaker(
-    engine, class_=AsyncSession, expire_on_commit=False
-)
+async_session_maker = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
 async def get_session() -> AsyncSession:

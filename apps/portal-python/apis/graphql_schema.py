@@ -305,14 +305,37 @@ class Mutation:
 
         # Extract keywords from job description (simple approach)
         import re
-        job_keywords = set(re.findall(r'\b[a-z]{3,}\b', job_lower))
-        resume_keywords = set(re.findall(r'\b[a-z]{3,}\b', resume_lower))
+
+        job_keywords = set(re.findall(r"\b[a-z]{3,}\b", job_lower))
+        resume_keywords = set(re.findall(r"\b[a-z]{3,}\b", resume_lower))
 
         # Common technical keywords to prioritize
-        tech_keywords = {'python', 'java', 'javascript', 'typescript', 'golang', 'react', 'vue',
-                        'kubernetes', 'docker', 'aws', 'azure', 'gcp', 'sql', 'nosql',
-                        'distributed', 'microservices', 'api', 'rest', 'graphql', 'kafka',
-                        'redis', 'postgresql', 'mongodb', 'elasticsearch'}
+        tech_keywords = {
+            "python",
+            "java",
+            "javascript",
+            "typescript",
+            "golang",
+            "react",
+            "vue",
+            "kubernetes",
+            "docker",
+            "aws",
+            "azure",
+            "gcp",
+            "sql",
+            "nosql",
+            "distributed",
+            "microservices",
+            "api",
+            "rest",
+            "graphql",
+            "kafka",
+            "redis",
+            "postgresql",
+            "mongodb",
+            "elasticsearch",
+        }
 
         # Calculate keyword match
         tech_in_job = job_keywords & tech_keywords
@@ -326,11 +349,11 @@ class Mutation:
         ats_score = 70.0
         suggestions = []
 
-        if input.resume_text.count('\n') < 20:
+        if input.resume_text.count("\n") < 20:
             ats_score -= 10
             suggestions.append("Add more content - resume seems too short")
 
-        if len(re.findall(r'\d+%|\d+x|\$\d+', input.resume_text)) < 3:
+        if len(re.findall(r"\d+%|\d+x|\$\d+", input.resume_text)) < 3:
             ats_score -= 5
             suggestions.append("Add more quantifiable achievements with numbers")
 
@@ -380,4 +403,3 @@ class Mutation:
 # =============================================================================
 
 schema = strawberry.Schema(query=Query, mutation=Mutation)
-

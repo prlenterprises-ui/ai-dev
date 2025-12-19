@@ -65,7 +65,7 @@ async def api_error_handler(request: Request, exc: APIError) -> JSONResponse:
             "method": request.method,
             "status_code": exc.status_code,
             "details": exc.details,
-        }
+        },
     )
 
     return JSONResponse(
@@ -88,7 +88,7 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
             "path": request.url.path,
             "method": request.method,
             "status_code": exc.status_code,
-        }
+        },
     )
 
     return JSONResponse(
@@ -112,7 +112,7 @@ async def general_exception_handler(request: Request, exc: Exception) -> JSONRes
             "path": request.url.path,
             "method": request.method,
             "traceback": tb,
-        }
+        },
     )
 
     # Return generic error to client (don't leak internal details)

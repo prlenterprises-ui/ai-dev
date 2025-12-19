@@ -71,9 +71,7 @@ class LLMCouncil:
         }
 
         # Create chairman client
-        self.chairman_client = OpenRouterClient(
-            model=self.config.chairman_model, api_key=api_key
-        )
+        self.chairman_client = OpenRouterClient(model=self.config.chairman_model, api_key=api_key)
 
     async def stage1_collect_responses(self, query: str) -> dict[str, LLMResponse]:
         """
@@ -282,9 +280,7 @@ Provide brief reasoning for your ranking, then end with the FINAL RANKING sectio
 
         # Stage 3: Chairman synthesis
         print("Stage 3: Chairman synthesis...")
-        final_answer = await self.stage3_synthesize(
-            query, responses, rankings, aggregate_rankings
-        )
+        final_answer = await self.stage3_synthesize(query, responses, rankings, aggregate_rankings)
 
         return CouncilResult(
             query=query,
@@ -294,4 +290,3 @@ Provide brief reasoning for your ranking, then end with the FINAL RANKING sectio
             final_answer=final_answer,
             chairman_model=self.config.chairman_model,
         )
-
