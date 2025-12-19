@@ -9,7 +9,6 @@ WORKDIR /app
 
 # Copy pyproject and install dependencies
 COPY pyproject.toml .
-COPY pyproject.lock . 2>/dev/null || true
 RUN python -m pip install --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir .
 

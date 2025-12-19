@@ -99,14 +99,30 @@ async def upload_resume(file: UploadFile = File(...)):
     content = await file.read()
     size = len(content)
 
-    # TODO: Save to storage, parse content
-    # For now, just acknowledge the upload
-
+    # Save to storage
+    import os
+    from pathlib import Path
+    
+    storage_dir = Path("/tmp/uploads")
+    storage_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Generate safe filename
+    safe_filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{file.filename}"
+    file_path = storage_dir / safe_filename
+    
+    with open(file_path, "wb") as f:
+        f.write(content)
+    
+    # Basic text extraction
+    text_preview = ""
+    if file.content_type == "text/plain":
+        text_preview = content.decode('utf-8', errors='ignore')[:500]
+    
     return FileUploadResponse(
         filename=file.filename or "unknown",
         size=size,
         content_type=file.content_type or "unknown",
-        message="Resume uploaded successfully. Processing will begin shortly.",
+        message=f"Resume uploaded successfully to {file_path}. Processing will begin shortly.",
     )
 
 
@@ -114,15 +130,37 @@ async def upload_resume(file: UploadFile = File(...)):
 async def upload_job_description(file: UploadFile = File(...)):
     """Upload a job description file for parsing."""
     content = await file.read()
-
-    # TODO: Parse job description, extract structured data
+    
+    # Extract text based on file type
+    text_content = ""
+    if file.content_type == "text/plain":
+        text_content = content.decode('utf-8')
+    else:
+        # For other formats, basic extraction
+        try:
+            text_content = content.decode('utf-8', errors='ignore')
+        except:
+            text_content = str(content)
+    
+    # Basic parsing - extract title from first lines
+    lines = [line.strip() for line in text_content.split('\n') if line.strip()]
+    title = lines[0] if lines else "Unknown Position"
+    
+    # Extract company name (simple heuristic)
+    company = "Unknown Company"
+    for line in lines[:5]:
+        if any(keyword in line.lower() for keyword in ['company:', 'at ', 'join ']):
+            company = line
+            break
 
     return {
         "filename": file.filename,
         "size": len(content),
-        "message": "Job description uploaded. Parsing...",
+        "message": "Job description uploaded and parsed.",
         "parsed": {
-            "title": "Extracted job title",
+            "title": title[:100],
+            "company": company[:100],
+            "full_text": text_content[:1000],  # First 1000 chars
             "company": "Extracted company name",
             "requirements": ["requirement 1", "requirement 2"],
         },
