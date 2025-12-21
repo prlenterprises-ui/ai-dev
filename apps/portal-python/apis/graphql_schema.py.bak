@@ -6,6 +6,7 @@ This is the unified GraphQL schema that combines all modules:
 - LLM Council deliberation
 - Resume matching and scoring
 - Job application tracking
+- Configuration management
 
 Strawberry uses Python type hints for schema definition,
 making it very Pythonic and easy to maintain.
@@ -13,8 +14,11 @@ making it very Pythonic and easy to maintain.
 
 from datetime import datetime
 from typing import Optional
+import json
 
 import strawberry
+from sqlmodel import select
+from python.database import Config as ConfigModel, get_session
 
 # =============================================================================
 # TYPES - Data structures returned by the API
@@ -87,6 +91,19 @@ class JobApplication:
     cover_letter_url: Optional[str] = None
 
 
+@strawberry.type
+class ConfigType:
+    """Application configuration."""
+
+    id: int
+    name: str
+    title: str
+    description: Optional[str]
+    config: strawberry.scalars.JSON
+    created_at: datetime
+    updated_at: datetime
+
+
 # =============================================================================
 # INPUTS - Data structures for mutations
 # =============================================================================
@@ -117,6 +134,25 @@ class JobApplicationInput:
     company: str
     job_description: str
     job_url: Optional[str] = None
+
+
+@strawberry.input
+class ConfigInput:
+    """Input for creating a configuration."""
+
+    name: str
+    title: str
+    description: Optional[str] = None
+    config: strawberry.scalars.JSON
+
+
+@strawberry.input
+class ConfigUpdateInput:
+    """Input for updating a configuration."""
+
+    title: Optional[str] = None
+    description: Optional[str] = None
+    config: Optional[strawberry.scalars.JSON] = None
 
 
 # =============================================================================
@@ -216,6 +252,44 @@ class Query:
         if status:
             return [a for a in mock_apps if a.status == status]
         return mock_apps
+
+    @strawberry.field
+    async def configs(self, info: strawberry.Info) -> list[ConfigType]:
+        """Get all configurations."""
+        async for session in get_session():
+            result = await session.execute(select(ConfigModel))
+            configs = result.scalars().all()
+            return [
+                ConfigType(
+                    id=config.id,
+                    name=config.name,
+                    title=config.title,
+                    description=config.description,
+                    config=json.loads(config.config_json),
+                    created_at=config.created_at,
+                    updated_at=config.updated_at,
+                )
+                for config in configs
+            ]
+        return []
+
+    @strawberry.field
+    async def config(self, info: strawberry.Info, name: str) -> Optional[ConfigType]:
+        """Get a specific configuration by name."""
+        async for session in get_session():
+            result = await session.execute(select(ConfigModel).where(ConfigModel.name == name))
+            config = result.scalar_one_or_none()
+            if config:
+                return ConfigType(
+                    id=config.id,
+                    name=config.name,
+                    title=config.title,
+                    description=config.description,
+                    config=json.loads(config.config_json),
+                    created_at=config.created_at,
+                    updated_at=config.updated_at,
+                )
+        return None
 
 
 # =============================================================================
@@ -396,6 +470,85 @@ class Mutation:
         #     status="pending",
         #     created_at=datetime.now(),
         # )
+        pass
+
+    @strawberry.mutation
+    async def create_config(self, info: strawberry.Info, input: ConfigInput) -> ConfigType:
+        """Create a new configuration."""
+        async for session in get_session():
+            # Check if config already exists
+            result = await session.execute(select(ConfigModel).where(ConfigModel.name == input.name))
+            existing = result.scalar_one_or_none()
+            if existing:
+                raise Exception(f"Config '{input.name}' already exists")
+
+            config = ConfigModel(
+                name=input.name,
+                title=input.title,
+                description=input.description,
+                config_json=json.dumps(input.config),
+            )
+            session.add(config)
+            await session.commit()
+            await session.refresh(config)
+
+            return ConfigType(
+                id=config.id,
+                name=config.name,
+                title=config.title,
+                description=config.description,
+                config=json.loads(config.config_json),
+                created_at=config.created_at,
+                updated_at=config.updated_at,
+            )
+
+    @strawberry.mutation
+    async def update_config(
+        self, info: strawberry.Info, name: str, input: ConfigUpdateInput
+    ) -> ConfigType:
+        """Update an existing configuration."""
+        async for session in get_session():
+            result = await session.execute(select(ConfigModel).where(ConfigModel.name == name))
+            config = result.scalar_one_or_none()
+
+            if not config:
+                raise Exception(f"Config '{name}' not found")
+
+            if input.title is not None:
+                config.title = input.title
+            if input.description is not None:
+                config.description = input.description
+            if input.config is not None:
+                config.config_json = json.dumps(input.config)
+
+            config.updated_at = datetime.now()
+
+            await session.commit()
+            await session.refresh(config)
+
+            return ConfigType(
+                id=config.id,
+                name=config.name,
+                title=config.title,
+                description=config.description,
+                config=json.loads(config.config_json),
+                created_at=config.created_at,
+                updated_at=config.updated_at,
+            )
+
+    @strawberry.mutation
+    async def delete_config(self, info: strawberry.Info, name: str) -> bool:
+        """Delete a configuration."""
+        async for session in get_session():
+            result = await session.execute(select(ConfigModel).where(ConfigModel.name == name))
+            config = result.scalar_one_or_none()
+
+            if not config:
+                raise Exception(f"Config '{name}' not found")
+
+            await session.delete(config)
+            await session.commit()
+            return True
 
 
 # =============================================================================

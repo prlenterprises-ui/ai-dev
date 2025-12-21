@@ -1,61 +1,80 @@
-import { useState } from 'react';
-import { Loader2, Search, FileText, Send, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
-
-interface JobApplication {
-  id: number;
-  job_title: string;
-  company: string;
-  status: string;
-  match_score: number;
-  resume_url: string;
-  cover_letter_url: string;
-  job_url: string;
-  created_at: string;
-}
-
-interface PipelineUpdate {
-  stage: string;
-  status: string;
-  message: string;
-  data?: any;
-  error?: string;
-}
+import { useState, useEffect } from 'react';
+import { Loader2, Search, Briefcase, ExternalLink, Calendar, Building2 } from 'lucide-react';
 
 export default function AutoJobApply() {
-  const [keywords, setKeywords] = useState('');
-  const [location, setLocation] = useState('');
-  const [maxApplications, setMaxApplications] = useState(10);
-  const [autoApply, setAutoApply] = useState(false);
-  
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentMessage, setCurrentMessage] = useState('');
-  const [updates, setUpdates] = useState<PipelineUpdate[]>([]);
-  const [applications, setApplications] = useState<JobApplication[]>([]);
+  const [applications, setApplications] = useState([]);
   const [error, setError] = useState('');
+  const [searchStatus, setSearchStatus] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const startPipeline = async () => {
-    if (!keywords.trim()) {
-      setError('Please enter job keywords');
+  useEffect(() => {
+    checkSearchStatus();
+    loadApplications();
+  }, []);
+
+  const checkSearchStatus = async () => {
+    try {
+      const response = await fetch('/api/jobs/search-availability');
+      if (response.ok) {
+        const data = await response.json();
+        setSearchStatus({
+          can_search: data.available,
+          hours_until_next: data.hours_until_available,
+          last_search: data.last_search_timestamp,
+          reason: data.reason
+        });
+      }
+    } catch (err) {
+      console.error('Failed to check search status:', err);
+    }
+  };
+
+  const loadApplications = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/jobs/applications?limit=100');
+      if (response.ok) {
+        const data = await response.json();
+        setApplications(data.applications || []);
+      }
+    } catch (err) {
+      console.error('Failed to load applications:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFindJobs = async () => {
+    // Check 24-hour cooldown
+    if (searchStatus && !searchStatus.can_search) {
+      setError(`Please wait ${searchStatus.hours_until_next.toFixed(1)} hours before searching again (24-hour cooldown)`);
       return;
     }
 
     setIsRunning(true);
     setError('');
-    setUpdates([]);
     setProgress(0);
     setCurrentMessage('Starting job search...');
 
     try {
-      // Start the pipeline
+      // Load config from database
+      const configResponse = await fetch('/api/configs/auto-apply');
+      if (!configResponse.ok) throw new Error('Failed to load configuration');
+      const configData = await configResponse.json();
+      const config = configData.config;
+
+      // Start the pipeline with config from database
       const response = await fetch('/api/jobs/auto-apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          keywords,
-          location: location || null,
-          max_applications: maxApplications,
-          auto_apply: autoApply
+          keywords: config.jsearch.queries.join(', '),
+          location: config.jsearch.location || null,
+          max_applications: 100,
+          auto_apply: false
         })
       });
 
@@ -68,17 +87,16 @@ export default function AutoJobApply() {
 
       // Connect to SSE stream for progress updates
       const eventSource = new EventSource(
-        `/api/stream/auto-apply/${pipelineId}?keywords=${encodeURIComponent(keywords)}&location=${encodeURIComponent(location || '')}&max_applications=${maxApplications}&auto_apply=${autoApply}`
+        `/api/stream/auto-apply/${pipelineId}?keywords=${encodeURIComponent(config.jsearch.queries.join(', '))}&location=${encodeURIComponent(config.jsearch.location || '')}&max_applications=100&auto_apply=false`
       );
 
       eventSource.onmessage = (event) => {
-        const update: PipelineUpdate = JSON.parse(event.data);
+        const update = JSON.parse(event.data);
         
-        setUpdates(prev => [...prev, update]);
         setCurrentMessage(update.message);
 
         // Calculate progress
-        const stageProgress: Record<string, number> = {
+        const stageProgress = {
           'search': 10,
           'filter': 20,
           'processing': 30,
@@ -97,6 +115,15 @@ export default function AutoJobApply() {
           setIsRunning(false);
           setProgress(100);
           loadApplications();
+          checkSearchStatus(); // Refresh cooldown status
+        }
+
+        // Handle rate limiting
+        if (update.status === 'rate_limited') {
+          eventSource.close();
+          setIsRunning(false);
+          setError(update.message || update.error || 'Search rate limited. Please wait 24 hours between searches.');
+          checkSearchStatus(); // Refresh cooldown status
         }
 
         // Handle errors
@@ -113,121 +140,48 @@ export default function AutoJobApply() {
         setError('Connection lost. Please try again.');
       };
 
-    } catch (err: any) {
+    } catch (err) {
       setError(err.message || 'Failed to start pipeline');
       setIsRunning(false);
     }
   };
 
-  const loadApplications = async () => {
-    try {
-      const response = await fetch('/api/jobs/applications?status=completed&limit=50');
-      if (response.ok) {
-        const data = await response.json();
-        setApplications(data.applications);
-      }
-    } catch (err) {
-      console.error('Failed to load applications:', err);
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'pending': return 'bg-yellow-500/20 text-yellow-300';
+      case 'completed': return 'bg-green-500/20 text-green-300';
+      case 'applied': return 'bg-blue-500/20 text-blue-300';
+      case 'failed': return 'bg-red-500/20 text-red-300';
+      default: return 'bg-gray-500/20 text-gray-300';
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return <CheckCircle className="w-4 h-4 text-green-400" />;
-      case 'failed':
-        return <XCircle className="w-4 h-4 text-red-400" />;
-      case 'started':
-        return <Loader2 className="w-4 h-4 animate-spin text-blue-400" />;
-      default:
-        return <AlertCircle className="w-4 h-4 text-gray-400" />;
-    }
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="text-center space-y-3">
-        <h1 className="font-display text-4xl font-bold bg-gradient-to-r from-electric-400 to-coral-400 bg-clip-text text-transparent">
-          Automated Job Application
-        </h1>
-        <p className="text-sand-400 text-lg">
-          Search, analyze, and apply to jobs automatically with AI-powered resume tailoring
-        </p>
-      </div>
-
-      {/* Settings Card */}
-      <div className="bg-[#1a1a24] rounded-xl border border-[#2a2a35] p-6 space-y-6">
-        <div>
-          <h2 className="text-xl font-semibold mb-1">Job Search Settings</h2>
-          <p className="text-sand-400 text-sm">Configure your automated job application preferences</p>
+    <div className="space-y-8">
+      {/* Header with Find Jobs button */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-electric-500 to-electric-600 flex items-center justify-center">
+            <Briefcase className="text-white" size={28} />
+          </div>
+          <div>
+            <h1 className="font-display text-3xl font-bold">Automated Job Application</h1>
+            <p className="text-sand-400">AI-powered job search with 100-job limit per search</p>
+          </div>
         </div>
         
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <label className="block text-sm font-medium">Job Keywords *</label>
-            <input
-              type="text"
-              placeholder="e.g., Senior Software Engineer, Python, React"
-              value={keywords}
-              onChange={(e) => setKeywords(e.target.value)}
-              disabled={isRunning}
-              className="w-full px-4 py-2 bg-[#0f0f12] border border-[#2a2a35] rounded-lg focus:outline-none focus:ring-2 focus:ring-electric-500 disabled:opacity-50"
-            />
-            <p className="text-sm text-sand-500">Enter job titles, skills, or keywords to search for</p>
-          </div>
-
-          <div className="space-y-2">
-            <label className="block text-sm font-medium">Location (Optional)</label>
-            <input
-              type="text"
-              placeholder="e.g., San Francisco, Remote, New York"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              disabled={isRunning}
-              className="w-full px-4 py-2 bg-[#0f0f12] border border-[#2a2a35] rounded-lg focus:outline-none focus:ring-2 focus:ring-electric-500 disabled:opacity-50"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="block text-sm font-medium">Maximum Applications</label>
-            <input
-              type="number"
-              min="1"
-              max="50"
-              value={maxApplications}
-              onChange={(e) => setMaxApplications(parseInt(e.target.value) || 10)}
-              disabled={isRunning}
-              className="w-full px-4 py-2 bg-[#0f0f12] border border-[#2a2a35] rounded-lg focus:outline-none focus:ring-2 focus:ring-electric-500 disabled:opacity-50"
-            />
-            <p className="text-sm text-sand-500">Number of job applications to generate (1-50)</p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="auto-apply"
-              checked={autoApply}
-              onChange={(e) => setAutoApply(e.target.checked)}
-              disabled={isRunning}
-              className="w-4 h-4 rounded border-[#2a2a35] bg-[#0f0f12] text-electric-500 focus:ring-electric-500"
-            />
-            <label htmlFor="auto-apply" className="text-sm cursor-pointer">
-              Automatically submit applications (when possible)
-            </label>
-          </div>
-
-          {error && (
-            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400">
-              {error}
-            </div>
-          )}
-        </div>
-
         <button
-          onClick={startPipeline}
-          disabled={isRunning || !keywords.trim()}
-          className="w-full py-3 px-6 bg-gradient-to-r from-electric-500 to-electric-600 hover:from-electric-600 hover:to-electric-700 rounded-lg font-medium flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={handleFindJobs}
+          disabled={isRunning || (searchStatus && !searchStatus.can_search)}
+          className="px-6 py-3 bg-gradient-to-r from-electric-500 to-electric-600 hover:from-electric-600 hover:to-electric-700 rounded-lg font-medium flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isRunning ? (
             <>
@@ -237,115 +191,138 @@ export default function AutoJobApply() {
           ) : (
             <>
               <Search className="w-5 h-5" />
-              Start Auto-Apply
+              Find Jobs
             </>
           )}
         </button>
       </div>
 
+      {/* Cooldown Warning */}
+      {searchStatus && !searchStatus.can_search && (
+        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
+          <p className="font-medium text-yellow-400">⏱️ Search Cooldown Active</p>
+          <p className="text-sm text-sand-400 mt-1">
+            You can search again in {searchStatus.hours_until_next.toFixed(1)} hours (24-hour rate limit)
+          </p>
+        </div>
+      )}
+
       {/* Progress */}
       {isRunning && (
-        <div className="bg-[#1a1a24] rounded-xl border border-[#2a2a35] p-6 space-y-4">
-          <div>
-            <h3 className="font-semibold mb-1">Pipeline Progress</h3>
-            <p className="text-sm text-sand-400">{currentMessage}</p>
+        <div className="bg-[#1a1a24] rounded-xl border border-[#2a2a35] p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Loader2 className="w-5 h-5 animate-spin text-electric-400" />
+            <span className="font-medium">Job Search in Progress</span>
           </div>
-          <div className="w-full bg-[#0f0f12] rounded-full h-2">
+          <div className="w-full bg-[#0f0f12] rounded-full h-2 overflow-hidden">
             <div
-              className="bg-gradient-to-r from-electric-500 to-electric-600 h-2 rounded-full transition-all duration-300"
+              className="h-full bg-gradient-to-r from-electric-500 to-electric-600 transition-all duration-300"
               style={{ width: `${progress}%` }}
             />
           </div>
+          <p className="text-sm text-sand-400 mt-2">{currentMessage}</p>
         </div>
       )}
 
-      {/* Updates Log */}
-      {updates.length > 0 && (
-        <div className="bg-[#1a1a24] rounded-xl border border-[#2a2a35] p-6 space-y-4">
-          <h3 className="font-semibold">Activity Log</h3>
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {updates.map((update, idx) => (
-              <div key={idx} className="flex items-start gap-3 p-3 bg-[#0f0f12]/50 rounded-lg">
-                {getStatusIcon(update.status)}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-block px-2 py-0.5 bg-electric-500/20 text-electric-400 text-xs rounded-full capitalize">
-                      {update.stage}
-                    </span>
-                    <span className="text-sm text-sand-500 capitalize">{update.status}</span>
-                  </div>
-                  <p className="text-sm mt-1">{update.message}</p>
-                  {update.error && (
-                    <p className="text-sm text-red-400 mt-1">{update.error}</p>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 text-red-400">
+          {error}
         </div>
       )}
 
-      {/* Generated Applications */}
-      {applications.length > 0 && (
-        <div className="bg-[#1a1a24] rounded-xl border border-[#2a2a35] p-6 space-y-4">
-          <div>
-            <h3 className="font-semibold mb-1">Generated Applications</h3>
-            <p className="text-sm text-sand-400">
-              {applications.length} applications with tailored resumes and cover letters
-            </p>
-          </div>
-          <div className="space-y-3">
-            {applications.map((app) => (
-              <div key={app.id} className="flex items-center justify-between p-4 bg-[#0f0f12]/50 rounded-lg border border-[#2a2a35]">
-                <div className="flex-1">
-                  <h4 className="font-semibold">{app.job_title}</h4>
-                  <p className="text-sm text-sand-400">{app.company}</p>
-                  {app.match_score && (
-                    <span className="inline-block mt-1 px-2 py-0.5 bg-green-500/20 text-green-400 text-xs rounded-full">
-                      {app.match_score}% Match
-                    </span>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  {app.resume_url && (
-                    <a
-                      href={app.resume_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3 py-2 bg-[#1a1a24] border border-[#2a2a35] rounded-lg text-sm flex items-center gap-1 hover:bg-[#2a2a35] transition-colors"
-                    >
-                      <FileText className="w-4 h-4" />
-                      Resume
-                    </a>
-                  )}
-                  {app.cover_letter_url && (
-                    <a
-                      href={app.cover_letter_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3 py-2 bg-[#1a1a24] border border-[#2a2a35] rounded-lg text-sm flex items-center gap-1 hover:bg-[#2a2a35] transition-colors"
-                    >
-                      <FileText className="w-4 h-4" />
-                      Cover Letter
-                    </a>
-                  )}
-                  {app.job_url && (
-                    <a
-                      href={app.job_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3 py-2 bg-electric-500 hover:bg-electric-600 rounded-lg text-sm flex items-center gap-1 transition-colors"
-                    >
-                      <Send className="w-4 h-4" />
-                      Apply
-                    </a>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+      {/* Job Applications Table */}
+      <div className="bg-[#1a1a24] rounded-xl border border-[#2a2a35] overflow-hidden">
+        <div className="p-6 border-b border-[#2a2a35]">
+          <h2 className="text-xl font-semibold">Job Applications</h2>
+          <p className="text-sm text-sand-400 mt-1">{applications.length} jobs found</p>
         </div>
-      )}
+
+        {loading ? (
+          <div className="p-12 text-center">
+            <Loader2 className="w-8 h-8 animate-spin text-electric-400 mx-auto mb-3" />
+            <p className="text-sand-400">Loading applications...</p>
+          </div>
+        ) : applications.length === 0 ? (
+          <div className="p-12 text-center">
+            <Briefcase className="w-12 h-12 text-sand-600 mx-auto mb-3" />
+            <p className="text-sand-400">No job applications yet. Click "Find Jobs" to start searching.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-[#252530] border-b border-[#2a2a35]">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-sand-400 uppercase tracking-wider">Job Title</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-sand-400 uppercase tracking-wider">Company</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-sand-400 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-sand-400 uppercase tracking-wider">Match Score</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-sand-400 uppercase tracking-wider">Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-sand-400 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#2a2a35]">
+                {applications.map((app) => (
+                  <tr key={app.id} className="hover:bg-[#252530] transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="font-medium text-white">{app.job_title}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2 text-sand-300">
+                        <Building2 className="w-4 h-4 text-sand-500" />
+                        {app.company}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(app.status)}`}>
+                        {app.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      {app.match_score ? (
+                        <span className="text-electric-400 font-medium">{Math.round(app.match_score * 100)}%</span>
+                      ) : (
+                        <span className="text-sand-500">-</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2 text-sm text-sand-400">
+                        <Calendar className="w-4 h-4" />
+                        {formatDate(app.created_at)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        {app.job_url && (
+                          <a
+                            href={app.job_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-electric-400 hover:text-electric-300 transition-colors"
+                            title="View Job"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </a>
+                        )}
+                        {app.resume_url && (
+                          <a
+                            href={app.resume_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sand-400 hover:text-sand-300 transition-colors text-xs px-2 py-1 bg-[#252530] rounded"
+                          >
+                            Resume
+                          </a>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

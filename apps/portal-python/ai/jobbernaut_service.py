@@ -26,15 +26,56 @@ except ImportError as e:
 class JobbernautService:
     """Service for running Jobbernaut resume tailoring pipeline."""
     
-    def __init__(self):
-        """Initialize the service."""
+    def __init__(self, db_session=None):
+        """Initialize the service.
+        
+        Args:
+            db_session: Optional database session for loading config from DB
+        """
         self.pipeline = None
+        self.db_session = db_session
         self.jobbernaut_root = Path(__file__).parent.parent / "jobbernaut"
         self.config_path = self.jobbernaut_root / "config.json"
         self.master_resume_path = self.jobbernaut_root / "profile" / "master_resume.json"
         self.applications_path = self.jobbernaut_root / "data" / "applications.yaml"
         self.outputs_path = self.jobbernaut_root / "outputs"
         
+    async def load_config(self) -> Dict:
+        """Load configuration from database first, fallback to config.json.
+        
+        Returns:
+            Configuration dictionary
+        """
+        config = {}
+        
+        # Try database first if session is available
+        if self.db_session:
+            try:
+                from sqlmodel import select
+                from python.database import Config
+                
+                result = await self.db_session.execute(
+                    select(Config).where(Config.name == "jobbernaut")
+                )
+                config_obj = result.scalar_one_or_none()
+                
+                if config_obj:
+                    config = json.loads(config_obj.config_json)
+                    print("✅ Loaded jobbernaut config from database")
+                    return config
+            except Exception as e:
+                print(f"⚠️  Could not load from database: {e}")
+        
+        # Fallback to config.json
+        if self.config_path.exists():
+            with open(self.config_path) as f:
+                config = json.load(f)
+            print("✅ Loaded jobbernaut config from config.json (fallback)")
+        else:
+            print("⚠️  No jobbernaut config found, using defaults")
+        
+        return config
+    
     async def initialize(self) -> bool:
         """Initialize the Jobbernaut pipeline."""
         if not JOBBERNAUT_AVAILABLE:

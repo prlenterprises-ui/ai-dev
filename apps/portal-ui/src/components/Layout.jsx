@@ -1,14 +1,11 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { Home, Users, FileText, Target, Sparkles, Bird, Zap } from 'lucide-react'
+import { Home, Users, Settings, Zap } from 'lucide-react'
 
 const navItems = [
   { path: '/', label: 'Home', icon: Home },
   { path: '/council', label: 'LLM Council', icon: Users },
-  { path: '/jobbernaut', label: 'Jobbernaut', icon: FileText },
-  { path: '/matcher', label: 'Resume Matcher', icon: Target },
   { path: '/auto-apply', label: 'Auto Apply', icon: Zap },
-  { path: '/resume-lm', label: 'ResumeLM', icon: Sparkles, disabled: true },
-  { path: '/aihawk', label: 'AIHawk', icon: Bird, disabled: true },
+  { path: '/admin', label: 'Admin', icon: Settings },
 ]
 
 export default function Layout() {
@@ -18,7 +15,7 @@ export default function Layout() {
     <div className="min-h-screen gradient-bg">
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0f0f12]/80 backdrop-blur-xl border-b border-[#2a2a35]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-3">
@@ -62,19 +59,9 @@ export default function Layout() {
       </nav>
 
       {/* Main Content */}
-      <main className="pt-20 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <main className="pt-20 pb-12 px-4 sm:px-6 lg:px-8">
         <Outlet />
       </main>
-
-      {/* Footer */}
-      <footer className="border-t border-[#2a2a35] py-8">
-        <div className="max-w-7xl mx-auto px-4 text-center text-sand-500 text-sm">
-          <p>AI Dev Portal — Learning AI integration through unified tooling</p>
-          <p className="mt-2 text-sand-600">
-            Combining: Jobbernaut • LLM Council • Resume Matcher • ResumeLM • AIHawk
-          </p>
-        </div>
-      </footer>
     </div>
   )
 }

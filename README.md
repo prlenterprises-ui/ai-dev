@@ -5,6 +5,9 @@ Unified backend for AI-powered career development tools, combining resume genera
 ## Features
 
 - **LLM Council**: Multi-model deliberation system using GPT-4, Claude 3.5, Gemini 2.0, and Llama 3.3
+- **Resume & Cover Letter Generator**: AI-powered tailored resumes and cover letters using LLM Council ([docs](docs/RESUME_GENERATOR.md))
+- **Fast Application Tools**: Bulk generation and one-click workflow - 5-8 applications/hour ([docs](docs/FAST_APPLICATION_TOOLS.md))
+- **Job Application Tools**: Structured data models, application saver, and config validation ([docs](docs/AIHAWK_TOOLS.md))
 - **Resume Matching**: AI-powered resume analysis and ATS compatibility checking
 - **Job Applications**: Automated application tracking and document generation
 - **GraphQL API**: Modern GraphQL API with Strawberry

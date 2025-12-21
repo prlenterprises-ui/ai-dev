@@ -11,11 +11,13 @@ import logging
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from python.database import JobApplication
+from python.database import JobApplication, Config
 from ai.job_search_service import JobSearchService, JobSearchResult
 from ai.jobbernaut_service import JobbernautService
 from ai.llm_clients import get_openrouter_client
 from ai.opportunities_manager import OpportunitiesManager
+from ai.job_match_scorer import JobMatchScorer, get_default_user_profile
+from ai.user_profile_service import get_user_profile
 
 logger = logging.getLogger(__name__)
 
@@ -34,12 +36,83 @@ class JobApplicationPipeline:
        e. (Optional) Auto-apply if submission endpoint available
     """
     
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession, jsearch_config: Optional[Dict] = None):
         self.db = db
-        self.job_search = JobSearchService()
+        self.jsearch_config = jsearch_config or {}
+        self.job_search = JobSearchService(jsearch_config=self.jsearch_config)
         self.jobbernaut = JobbernautService()
         self.opportunities = OpportunitiesManager()
         self.llm_client = None  # Will be initialized when needed
+        self.match_scorer = JobMatchScorer()
+        self.user_profile = get_user_profile()
+        
+    async def _is_search_allowed(self) -> tuple[bool, Optional[str]]:
+        """Check if search is allowed (24 hours must pass between searches).
+        
+        Returns:
+            tuple: (is_allowed, reason_if_not_allowed)
+        """
+        try:
+            result = await self.db.execute(select(Config).where(Config.name == "auto-apply"))
+            config_obj = result.scalar_one_or_none()
+            if config_obj:
+                import json as json_lib
+                from dateutil import parser
+                from datetime import timedelta
+                
+                config_data = json_lib.loads(config_obj.config_json)
+                last_search = config_data.get("last_search_timestamp")
+                
+                if not last_search:
+                    return True, None
+                
+                last_search_dt = parser.isoparse(last_search)
+                time_since_last = datetime.now() - last_search_dt.replace(tzinfo=None)
+                
+                if time_since_last < timedelta(hours=24):
+                    hours_remaining = 24 - (time_since_last.total_seconds() / 3600)
+                    return False, f"Search rate limited. Last search was {time_since_last.total_seconds() / 3600:.1f} hours ago. Please wait {hours_remaining:.1f} more hours."
+                
+                return True, None
+            return True, None
+        except Exception as e:
+            logger.error(f"Failed to check search rate limit: {e}")
+            return True, None  # Allow search if check fails
+    
+    async def _check_and_adjust_search_window(self):
+        """Check last_search_timestamp and adjust date_posted if needed."""
+        try:
+            result = await self.db.execute(select(Config).where(Config.name == "auto-apply"))
+            config_obj = result.scalar_one_or_none()
+            if config_obj:
+                import json as json_lib
+                config_data = json_lib.loads(config_obj.config_json)
+                last_search = config_data.get("last_search_timestamp")
+                
+                if not last_search:
+                    # No previous search - use 7 days ("week")
+                    self.jsearch_config["date_posted"] = "week"
+                    logger.info("No previous search found, searching last 7 days (week)")
+                else:
+                    logger.info(f"Last search was at {last_search}")
+        except Exception as e:
+            logger.error(f"Failed to check last_search_timestamp: {e}")
+    
+    async def _update_last_search_timestamp(self):
+        """Update last_search_timestamp in auto-apply config."""
+        try:
+            result = await self.db.execute(select(Config).where(Config.name == "auto-apply"))
+            config_obj = result.scalar_one_or_none()
+            if config_obj:
+                import json as json_lib
+                config_data = json_lib.loads(config_obj.config_json)
+                config_data["last_search_timestamp"] = datetime.now().isoformat()
+                config_obj.config_json = json_lib.dumps(config_data)
+                config_obj.updated_at = datetime.now()
+                await self.db.commit()
+                logger.info(f"Updated last_search_timestamp to {config_data['last_search_timestamp']}")
+        except Exception as e:
+            logger.error(f"Failed to update last_search_timestamp: {e}")
         
     async def run_pipeline(
         self,
@@ -60,11 +133,28 @@ class JobApplicationPipeline:
         Yields:
             Progress updates as dict with status and data
         """
+        # Check rate limit (24 hours between searches)
+        is_allowed, rate_limit_message = await self._is_search_allowed()
+        if not is_allowed:
+            yield {
+                "stage": "search",
+                "status": "rate_limited",
+                "error": rate_limit_message,
+                "message": rate_limit_message
+            }
+            return
+        
         yield {
             "stage": "search",
             "status": "started",
             "message": f"Searching for jobs matching '{keywords}'..."
         }
+        
+        # Check and adjust search window based on last search timestamp
+        await self._check_and_adjust_search_window()
+        
+        # Update job search service with adjusted config
+        self.job_search.jsearch_config = self.jsearch_config
         
         # Step 1: Search for jobs
         try:
@@ -73,6 +163,9 @@ class JobApplicationPipeline:
                 location=location,
                 limit=max_applications * 2  # Get extra to filter
             )
+            
+            # Update last search timestamp
+            await self._update_last_search_timestamp()
             
             yield {
                 "stage": "search",
@@ -297,24 +390,30 @@ class JobApplicationPipeline:
         Returns:
             Dict with resume_path, cover_letter_path, and match_score
         """
-        # Prepare job data for Jobbernaut
-        job_data = {
-            "job_id": str(job_id),
-            "job_title": job.title,
-            "company_name": job.company,
-            "job_description": job.description
-        }
-        
         # Use Jobbernaut service to generate documents
         # This will stream progress updates which we could yield if needed
         result = {"resume_path": None, "cover_letter_path": None, "match_score": 0.0}
         
-        async for update in self.jobbernaut.generate_job_documents(job_data):
-            if update.get("stage") == "completed":
-                result["resume_path"] = update.get("data", {}).get("resume_path")
-                result["cover_letter_path"] = update.get("data", {}).get("cover_letter_path")
-                # TODO: Calculate actual match score by comparing job requirements to generated resume
-                result["match_score"] = 85.0  # Placeholder
+        async for update in self.jobbernaut.process_application_stream(
+            job_title=job.title,
+            company=job.company,
+            job_description=job.description,
+            job_url=job.url
+        ):
+            if update.get("step") == "complete" and update.get("status") == "success":
+                outputs = update.get("outputs", {})
+                result["resume_path"] = outputs.get("resume_pdf")
+                result["cover_letter_path"] = outputs.get("cover_letter_pdf")
+                
+                # Calculate actual match score
+                match_result = self.match_scorer.calculate_match_score(
+                    job_description=job.description,
+                    job_title=job.title,
+                    user_profile=self.user_profile
+                )
+                result["match_score"] = match_result["overall_score"]
+                result["match_breakdown"] = match_result["breakdown"]
+                result["match_details"] = match_result["details"]
         
         return result
     

@@ -1,0 +1,36 @@
+{
+  "score_matching": {
+    "salary_min": 150000,
+    "match_threshold": 70,
+    "weights": {
+      "skills": 0.4,
+      "experience": 0.25,
+      "role": 0.2,
+      "keywords": 0.15
+    },
+    "auto_generate_resume": true,
+    "min_skill_match": 50,
+    "penalize_overqualified": true,
+    "enable_recommendations": true
+  },
+  "jsearch": {
+    "App": "default-application_11406082",
+    "X-RapidAPI-Key": "cd1047a5demsh467564eaf585398p1d6565jsnd2ac2bd1e515",
+    "remote_jobs_only": true,
+    "work_from_home": true,
+    "date_posted": "3days",
+    "employment_types": "FULLTIME",
+    "num_pages": 1,
+    "location": "Remote",
+    "queries": [
+      "Senior Software Engineer",
+      "Staff Software Engineer",
+      "Principal Software Engineer"
+    ],
+    "preferred_publishers": [
+      "linkedin.com",
+      "indeed.com",
+      "glassdoor.com"
+    ]
+  }
+}

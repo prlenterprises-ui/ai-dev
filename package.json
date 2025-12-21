@@ -3,9 +3,10 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "dev:ui": "pnpm --filter portal-ui... dev",
-    "dev:api": "pnpm --filter portal-python... dev",
-    "dev": "turbo run dev --parallel",
+    "dev:ui": "pnpm --filter portal-ui dev",
+    "dev:api": "pnpm --filter portal-python dev",
+    "dev": "turbo run dev --filter=portal-ui --filter=portal-python --parallel",
+    "dev:all": "turbo run dev --parallel",
     "build:ui": "pnpm --filter portal-ui... build",
     "build:api": "pnpm --filter portal-python... build",
     "build": "turbo run build"

@@ -1,0 +1,50 @@
+{
+  "skills": [
+    "Python",
+    "JavaScript",
+    "React",
+    "Node.js",
+    "Docker",
+    "AWS",
+    "PostgreSQL",
+    "FastAPI",
+    "Git",
+    "REST API"
+  ],
+  "experience_years": 5,
+  "desired_roles": [
+    "Software Engineer",
+    "Backend Engineer",
+    "Full Stack Developer",
+    "Python Developer",
+    "Senior Developer"
+  ],
+  "locations": [
+    "Remote",
+    "San Francisco",
+    "New York"
+  ],
+  "remote_ok": true,
+  "desired_salary_min": 120000,
+  "desired_salary_max": 200000,
+  "education_level": "Bachelor",
+  "full_name": "Your Name",
+  "email": "your.email@example.com",
+  "phone": "555-0100",
+  "linkedin": "https://linkedin.com/in/yourprofile",
+  "github": "https://github.com/yourusername",
+  "website": "https://yourwebsite.com",
+  "job_types": [
+    "full-time"
+  ],
+  "company_sizes": [
+    "startup",
+    "medium",
+    "large"
+  ],
+  "industries": [
+    "Technology",
+    "Software",
+    "AI/ML"
+  ]
+}

@@ -2,8 +2,7 @@
 Portal Python - Unified Backend for AI Dev Portal
 
 This is the main entry point that combines:
-- GraphQL API (via Strawberry)
-- REST endpoints (for specific use cases)
+- REST API endpoints
 - AI/LLM integrations
 
 Run with: uv run python main.py
@@ -16,10 +15,10 @@ from pathlib import Path
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from strawberry.fastapi import GraphQLRouter
 
-from apis.graphql_schema import schema
 from apis.rest_routes import router as rest_router
+from apis.config_routes import router as config_router
+from apis.jobs_routes import router as jobs_router
 from python.config import settings
 from python.database import close_db, init_db
 from python.error_handlers import register_error_handlers
@@ -78,14 +77,11 @@ app = FastAPI(
     * **Resume Matching**: AI-powered resume analysis and job matching
     * **Job Applications**: Automated application tracking and tailoring
     * **File Uploads**: Support for resumes and job descriptions (PDF, DOCX, TXT)
+    * **Configuration Management**: Admin API for application settings
 
-    ## GraphQL Playground
+    ## REST API
 
-    Visit `/graphql` for the interactive GraphQL IDE.
-
-    ## REST Endpoints
-
-    Traditional REST APIs for file uploads and real-time events.
+    All endpoints are available under `/api/` prefix. See the interactive docs below.
     """,
     version="0.1.0",
     docs_url="/docs" if settings.is_development else None,
@@ -132,12 +128,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount GraphQL endpoint
-graphql_app = GraphQLRouter(schema)
-app.include_router(graphql_app, prefix="/graphql")
-
-# Mount REST routes (for specific endpoints that work better as REST)
+# Mount REST API routes
 app.include_router(rest_router, prefix="/api")
+app.include_router(config_router)
+app.include_router(jobs_router)
 
 
 @app.get("/")
@@ -148,9 +142,8 @@ async def root():
         "version": "0.1.0",
         "environment": settings.environment,
         "endpoints": {
-            "graphql": "/graphql",
-            "graphql_playground": "/graphql",
             "rest_api": "/api",
+            "configs": "/api/configs",
             "health": "/api/health",
             "docs": "/docs" if settings.is_development else None,
         },

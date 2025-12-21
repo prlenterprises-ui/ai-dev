@@ -24,11 +24,13 @@ class JobApplication(SQLModel, table=True):
     __tablename__ = "job_applications"
 
     id: Optional[int] = Field(default=None, primary_key=True)
+    
+    # Basic fields for indexing/search (extracted from JSON for convenience)
     job_title: str = Field(index=True)
     company: str = Field(index=True)
-    job_description: Optional[str] = None
     job_url: Optional[str] = None
-
+    source: Optional[str] = None  # Job board source (jsearch-linkedin, jsearch-indeed, etc.)
+    
     status: str = Field(default="pending", index=True)  # pending, in_progress, completed, failed
 
     resume_url: Optional[str] = None
@@ -40,6 +42,56 @@ class JobApplication(SQLModel, table=True):
     # Metadata
     notes: Optional[str] = None
     match_score: Optional[float] = None
+    
+    # SOURCE OF TRUTH: Complete JSearch API responses (stored as JSON text)
+    # These contain ALL data returned by JSearch - use these as primary data source
+    jsearch_search_response: Optional[str] = None  # Complete job object from /search endpoint (PRIMARY)
+    jsearch_details_response: Optional[str] = None  # Complete response from /job-details endpoint (optional)
+    jsearch_salary_response: Optional[str] = None  # Complete response from /estimated-salary endpoint (optional)
+    
+    # Deprecated fields - kept for backward compatibility, data is in jsearch_search_response
+    job_description: Optional[str] = None  # Use jsearch_search_response instead
+    
+    def get_jsearch_data(self) -> Optional[dict]:
+        """Parse and return the complete JSearch job data (source of truth)."""
+        if self.jsearch_search_response:
+            import json
+            try:
+                return json.loads(self.jsearch_search_response)
+            except json.JSONDecodeError:
+                return None
+        return None
+    
+    def get_full_description(self) -> Optional[str]:
+        """Get complete job description from JSearch data."""
+        data = self.get_jsearch_data()
+        return data.get("job_description") if data else self.job_description
+    
+    def get_salary_info(self) -> Optional[dict]:
+        """Get salary information from JSearch data."""
+        data = self.get_jsearch_data()
+        if data:
+            return {
+                "min": data.get("job_min_salary"),
+                "max": data.get("job_max_salary"),
+                "currency": data.get("job_salary_currency"),
+                "period": data.get("job_salary_period")
+            }
+        return None
+    
+    def get_location_details(self) -> Optional[dict]:
+        """Get detailed location info from JSearch data."""
+        data = self.get_jsearch_data()
+        if data:
+            return {
+                "city": data.get("job_city"),
+                "state": data.get("job_state"),
+                "country": data.get("job_country"),
+                "is_remote": data.get("job_is_remote"),
+                "latitude": data.get("job_latitude"),
+                "longitude": data.get("job_longitude")
+            }
+        return None
 
 
 class ResumeVersion(SQLModel, table=True):
@@ -77,6 +129,21 @@ class CouncilQuery(SQLModel, table=True):
     total_latency_ms: float = 0
 
     created_at: datetime = Field(default_factory=datetime.now, index=True)
+
+
+class Config(SQLModel, table=True):
+    """Application configuration storage."""
+
+    __tablename__ = "configs"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(index=True, unique=True)  # e.g., "auto_apply", "matching_service"
+    title: str  # Display name
+    description: Optional[str] = None
+    config_json: str  # JSON string of configuration
+    
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
 
 
 # =============================================================================

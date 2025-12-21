@@ -257,3 +257,13 @@ def create_client(provider: str, model: Optional[str] = None, **kwargs) -> BaseL
 
     client_class, default_model = providers[provider]
     return client_class(model=model or default_model, **kwargs)
+
+
+def get_openrouter_client(model: str = "openai/gpt-4o", **kwargs) -> OpenRouterClient:
+    """
+    Convenience function to create an OpenRouter client.
+    
+    Usage:
+        client = get_openrouter_client("google/gemini-pro")
+    """
+    return OpenRouterClient(model=model, **kwargs)

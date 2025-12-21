@@ -2,7 +2,13 @@ README.md
 pyproject.toml
 ai/__init__.py
 ai/council.py
+ai/job_application_pipeline.py
+ai/job_match_scorer.py
+ai/job_search_service.py
+ai/jobbernaut_service.py
 ai/llm_clients.py
+ai/opportunities_manager.py
+ai/user_profile_service.py
 apis/__init__.py
 apis/graphql_schema.py
 apis/rest_routes.py

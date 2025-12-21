@@ -14,7 +14,7 @@ import json
 import logging
 from datetime import datetime
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Body, File, Form, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -393,13 +393,23 @@ async def stream_auto_apply_progress(pipeline_id: str, keywords: str, location: 
     };
     ```
     """
-    from python.database import get_session
+    from python.database import async_session_maker, Config
     from ai.job_application_pipeline import JobApplicationPipeline
+    from sqlmodel import select
     
     async def generate():
         try:
-            async with get_session() as db:
-                pipeline = JobApplicationPipeline(db)
+            async with async_session_maker() as db:
+                # Load jsearch config from database
+                jsearch_config = None
+                result = await db.execute(select(Config).where(Config.name == "auto-apply"))
+                config_obj = result.scalar_one_or_none()
+                if config_obj:
+                    import json as json_lib
+                    full_config = json_lib.loads(config_obj.config_json)
+                    jsearch_config = full_config.get("jsearch", {})
+                
+                pipeline = JobApplicationPipeline(db, jsearch_config=jsearch_config)
                 
                 async for update in pipeline.run_pipeline(
                     keywords=keywords,
@@ -437,12 +447,22 @@ async def list_job_applications(status: str = None, limit: int = 100):
     Returns:
         List of job applications with details
     """
-    from python.database import get_session
+    from python.database import async_session_maker, Config
     from ai.job_application_pipeline import JobApplicationPipeline
+    from sqlmodel import select
     
     try:
-        async with get_session() as db:
-            pipeline = JobApplicationPipeline(db)
+        async with async_session_maker() as db:
+            # Load jsearch config from database
+            jsearch_config = None
+            result = await db.execute(select(Config).where(Config.name == "auto-apply"))
+            config_obj = result.scalar_one_or_none()
+            if config_obj:
+                import json as json_lib
+                full_config = json_lib.loads(config_obj.config_json)
+                jsearch_config = full_config.get("jsearch", {})
+            
+            pipeline = JobApplicationPipeline(db, jsearch_config=jsearch_config)
             applications = await pipeline.get_applications(status=status, limit=limit)
             
             return {
@@ -519,4 +539,161 @@ async def get_opportunities_summary():
     
     except Exception as e:
         logger.error(f"Failed to get opportunities summary: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/jobs/last-search", tags=["jobs"])
+async def get_last_search_timestamp():
+    """
+    Get the timestamp of the last job search.
+    
+    Returns:
+        ISO timestamp of last search, or null if never searched
+    """
+    from python.database import async_session_maker, Config
+    from sqlmodel import select
+    
+    try:
+        async with async_session_maker() as db:
+            result = await db.execute(select(Config).where(Config.name == "auto-apply"))
+            config_obj = result.scalar_one_or_none()
+            
+            if config_obj:
+                import json as json_lib
+                config_data = json_lib.loads(config_obj.config_json)
+                last_search = config_data.get("last_search_timestamp")
+                
+                return {
+                    "last_search_timestamp": last_search,
+                    "has_searched": last_search is not None
+                }
+            
+            return {
+                "last_search_timestamp": None,
+                "has_searched": False
+            }
+    
+    except Exception as e:
+        logger.error(f"Failed to get last search timestamp: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/jobs/search-availability", tags=["jobs"])
+async def check_search_availability():
+    """
+    Check if job search is currently available (24 hour rate limit).
+    
+    Returns:
+        available: bool - whether search is allowed
+        reason: str - explanation if not available
+        last_search_timestamp: str - ISO timestamp of last search
+        hours_since_last_search: float - hours since last search
+        hours_until_available: float - hours until next search is allowed
+    """
+    from python.database import async_session_maker, Config
+    from sqlmodel import select
+    from dateutil import parser
+    from datetime import timedelta
+    
+    try:
+        async with async_session_maker() as db:
+            result = await db.execute(select(Config).where(Config.name == "auto-apply"))
+            config_obj = result.scalar_one_or_none()
+            
+            if not config_obj:
+                return {
+                    "available": True,
+                    "reason": "No previous searches",
+                    "last_search_timestamp": None,
+                    "hours_since_last_search": None,
+                    "hours_until_available": 0
+                }
+            
+            import json as json_lib
+            config_data = json_lib.loads(config_obj.config_json)
+            last_search = config_data.get("last_search_timestamp")
+            
+            if not last_search:
+                return {
+                    "available": True,
+                    "reason": "No previous searches",
+                    "last_search_timestamp": None,
+                    "hours_since_last_search": None,
+                    "hours_until_available": 0
+                }
+            
+            last_search_dt = parser.isoparse(last_search)
+            time_since_last = datetime.now() - last_search_dt.replace(tzinfo=None)
+            hours_since = time_since_last.total_seconds() / 3600
+            
+            if time_since_last < timedelta(hours=24):
+                hours_until = 24 - hours_since
+                return {
+                    "available": False,
+                    "reason": f"Rate limited. Last search was {hours_since:.1f} hours ago.",
+                    "last_search_timestamp": last_search,
+                    "hours_since_last_search": round(hours_since, 2),
+                    "hours_until_available": round(hours_until, 2)
+                }
+            
+            return {
+                "available": True,
+                "reason": "24 hours have passed since last search",
+                "last_search_timestamp": last_search,
+                "hours_since_last_search": round(hours_since, 2),
+                "hours_until_available": 0
+            }
+    
+    except Exception as e:
+        logger.error(f"Failed to check search availability: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.patch("/jobs/applications/{application_id}/status", tags=["jobs"])
+async def update_application_status(
+    application_id: str,
+    status: str = Body(..., embed=True)
+):
+    """
+    Update status of a job application.
+    
+    Args:
+        application_id: Application ID
+        status: New status (applied, interview, offer, rejected)
+        
+    Returns:
+        Updated application
+    """
+    from ai.opportunities_manager import OpportunitiesManager
+    
+    valid_statuses = ['ready', 'applied', 'interview', 'offer', 'rejected']
+    if status not in valid_statuses:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid status. Must be one of: {valid_statuses}"
+        )
+    
+    try:
+        manager = OpportunitiesManager()
+        
+        # Load application
+        application = manager.get_application(application_id)
+        if not application:
+            raise HTTPException(status_code=404, detail="Application not found")
+        
+        # Update status
+        application['status'] = status
+        application['updated_at'] = datetime.utcnow().isoformat()
+        
+        # Save updated application
+        manager.update_application(application_id, application)
+        
+        logger.info(f"Updated application {application_id} status to {status}")
+        
+        return application
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to update application status: {e}")
         raise HTTPException(status_code=500, detail=str(e))
